@@ -1,5 +1,5 @@
 (function () {
-  const ROUTES = ['oauth', 'credentials', 'configs', 'manager', 'rclone', 'settings'];
+  const ROUTES = ['oauth-gd', 'oauth-od', 'credentials', 'configs', 'manager', 'rclone', 'settings'];
 
   function $(id) {
     return document.getElementById(id);
@@ -7,12 +7,13 @@
 
   function routeFromHash() {
     const raw = window.location.hash.replace('#', '');
-    return ROUTES.includes(raw) ? raw : 'oauth';
+    return ROUTES.includes(raw) ? raw : 'oauth-gd';
   }
 
   function setActiveRoute(route) {
     ROUTES.forEach((name) => {
-      $(`section-${name}`)?.classList.toggle('section--active', name === route);
+      const section = name.startsWith('oauth-') ? 'oauth' : name;
+      $(`section-${section}`)?.classList.toggle('section--active', section === (route.startsWith('oauth-') ? 'oauth' : route));
     });
 
     document.querySelectorAll('[data-route]').forEach((link) => {
@@ -31,6 +32,8 @@
 
     window.App.Sidebar?.closeMobileSidebar();
 
+    if (route === 'oauth-gd') window.App.OAuth?.setProviderFromRoute?.('gd');
+    if (route === 'oauth-od') window.App.OAuth?.setProviderFromRoute?.('od');
     if (route === 'credentials') window.App.Credentials?.loadPresets();
     if (route === 'configs') window.App.Configs?.loadConfigs();
     if (route === 'manager') window.App.Manager?.refreshOptions();
@@ -102,6 +105,7 @@
       window.App.utils.toast('Đã clear presets cache.');
     });
     $('exportAllConfigsBtn')?.addEventListener('click', exportAllConfigs);
+    $('saveApiKeyBtn')?.addEventListener('click', () => { localStorage.setItem('backend-api-key', $('settingsApiKey').value.trim()); window.App.utils.toast('Đã lưu API key local.'); window.location.reload(); });
   }
 
   function bindGlobalDialogs() {

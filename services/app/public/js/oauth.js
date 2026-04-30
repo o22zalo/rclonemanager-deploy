@@ -492,6 +492,7 @@
   window.App = window.App || {};
   window.App.OAuth = {
     init,
+    setProviderFromRoute(next) { setProvider(next); },
     renderPresetOptions,
     setBackendBanner,
     buildAuthUrl,

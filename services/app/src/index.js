@@ -15,6 +15,32 @@ const app = express();
 const port = Number(process.env.PORT || 53682);
 const publicDir = path.join(__dirname, '..', 'public');
 
+function parseAllowlist() {
+  return (process.env.ALLOWED_GMAILS || '').split(',').map((v) => v.trim().toLowerCase()).filter(Boolean);
+}
+
+function apiKeyAuth(req, res, next) {
+  const key = process.env.BACKEND_API_KEY || '';
+  if (!key) return next();
+  const incoming = req.get('x-api-key') || req.query.apiKey || '';
+  if (incoming === key) return next();
+  res.status(401).json({ error: 'Invalid API key.' });
+}
+
+async function googleLogin(req, res) {
+  const idToken = String(req.body?.idToken || '');
+  if (!idToken) return res.status(400).json({ error: 'Missing idToken.' });
+  const tokenInfoUrl = `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`;
+  const resp = await fetch(tokenInfoUrl);
+  const info = await resp.json();
+  if (!resp.ok) return res.status(401).json({ error: info.error_description || 'Invalid Google token.' });
+  const email = String(info.email || '').toLowerCase();
+  const allowed = parseAllowlist();
+  if (allowed.length && !allowed.includes(email)) return res.status(403).json({ error: 'Email not allowed.' });
+  res.json({ ok: true, email, name: info.name || '', picture: info.picture || '' });
+}
+
+
 app.set('trust proxy', true);
 
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
@@ -33,6 +59,18 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true }));
+
+app.post('/api/auth/google', googleLogin);
+app.get('/api/auth/config', (_req, res) => {
+  res.json({
+    firebaseApiKey: process.env.GOOGLE_AUTH_FIREBASE_API_KEY || '',
+    firebaseAuthDomain: process.env.GOOGLE_AUTH_FIREBASE_AUTH_DOMAIN || '',
+    firebaseProjectId: process.env.GOOGLE_AUTH_FIREBASE_PROJECT_ID || '',
+    allowedGmails: parseAllowlist(),
+  });
+});
+
+app.use('/api', apiKeyAuth);
 
 app.get('/health', async (_req, res) => {
   const status = await firebase.getStatus();

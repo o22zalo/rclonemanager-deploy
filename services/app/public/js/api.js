@@ -1,4 +1,6 @@
 (function () {
+  const backendApiKey = localStorage.getItem('backend-api-key') || '';
+
   const backendBase = window.location.protocol === 'file:' ? 'http://localhost:53682' : window.location.origin;
 
   window.App = window.App || {};
@@ -23,6 +25,7 @@
     const response = await fetch(`${backendBase}${path}`, {
       headers: {
         'Content-Type': 'application/json',
+        ...(backendApiKey ? { 'x-api-key': backendApiKey } : {}),
         ...(options.headers || {}),
       },
       ...options,

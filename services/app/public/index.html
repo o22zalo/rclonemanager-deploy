@@ -36,7 +36,8 @@
     </div>
     <nav class="sidebar__nav" aria-label="Primary">
       <ul class="sidebar__menu" role="list">
-        <li><a href="#oauth" class="sidebar__link sidebar__link--active" data-route="oauth" data-tooltip="OAuth Auth" aria-current="page"><span class="sidebar__link-icon" aria-hidden="true">🔐</span><span class="sidebar__link-label">OAuth Auth</span></a></li>
+        <li><a href="#oauth" class="sidebar__link sidebar__link--active" data-route="oauth-gd" data-tooltip="OAuth Google" aria-current="page"><span class="sidebar__link-icon" aria-hidden="true">🔐</span><span class="sidebar__link-label">OAuth Google</span></a></li>
+        <li><a href="#oauth-od" class="sidebar__link" data-route="oauth-od" data-tooltip="OAuth OneDrive"><span class="sidebar__link-icon" aria-hidden="true">☁️</span><span class="sidebar__link-label">OAuth OneDrive</span></a></li>
         <li><a href="#credentials" class="sidebar__link" data-route="credentials" data-tooltip="Credentials"><span class="sidebar__link-icon" aria-hidden="true">⚙️</span><span class="sidebar__link-label">Credentials</span></a></li>
         <li><a href="#configs" class="sidebar__link" data-route="configs" data-tooltip="Configs"><span class="sidebar__link-icon" aria-hidden="true">📋</span><span class="sidebar__link-label">Configs</span></a></li>
         <li><a href="#manager" class="sidebar__link" data-route="manager" data-tooltip="Manager"><span class="sidebar__link-icon" aria-hidden="true">📊</span><span class="sidebar__link-label">Manager</span></a></li>
@@ -549,6 +550,9 @@
             <div class="panel__header"><h2 class="h4">Firebase connection</h2></div>
             <div class="panel__body stack">
               <div class="form-field"><label class="label" for="settingsDbUrl">Database URL</label><input class="input" id="settingsDbUrl" placeholder="https://project.firebaseio.com" /></div>
+              <div class="form-field"><label class="label" for="settingsApiKey">Backend API key</label><input class="input" id="settingsApiKey" placeholder="x-api-key" /></div>
+              <button type="button" class="btn btn--secondary" id="saveApiKeyBtn">Lưu API key local</button>
+              <div class="form-field"><label class="label">Google Auth env</label><div class="text-secondary">Dùng env: GOOGLE_AUTH_FIREBASE_API_KEY, GOOGLE_AUTH_FIREBASE_AUTH_DOMAIN, GOOGLE_AUTH_FIREBASE_PROJECT_ID, ALLOWED_GMAILS</div></div>
               <div class="form-field"><label class="label" for="settingsAuthMode">Auth mode</label><select class="select" id="settingsAuthMode"><option value="serviceAccount">service account</option><option value="secret">secret</option></select></div>
               <button type="button" class="btn btn--primary" id="testConnectionBtn">Test connection</button>
             </div>
@@ -573,7 +577,7 @@
   </main>
 
   <nav class="bottom-nav" aria-label="Mobile navigation">
-    <a href="#oauth" class="bottom-nav__item bottom-nav__item--active" data-route="oauth" aria-current="page"><span class="bottom-nav__icon" aria-hidden="true">🔐</span><span>OAuth</span></a>
+    <a href="#oauth-gd" class="bottom-nav__item bottom-nav__item--active" data-route="oauth-gd" aria-current="page"><span class="bottom-nav__icon" aria-hidden="true">🔐</span><span>OAuth</span></a>
     <a href="#credentials" class="bottom-nav__item" data-route="credentials"><span class="bottom-nav__icon" aria-hidden="true">⚙️</span><span>Creds</span></a>
     <a href="#configs" class="bottom-nav__item" data-route="configs"><span class="bottom-nav__icon" aria-hidden="true">📋</span><span>Configs</span></a>
     <a href="#manager" class="bottom-nav__item" data-route="manager"><span class="bottom-nav__icon" aria-hidden="true">📊</span><span>Manage</span></a>
