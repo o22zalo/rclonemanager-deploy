@@ -106,7 +106,10 @@ app.get('/api/auth/config', (_req, res) => {
 });
 
 app.use('/api', apiKeyAuth);
-app.use('/api', requireGoogleAuth);
+app.use('/api', (req, res, next) => {
+  if (req.path.startsWith('/auth/') || req.path === '/auth/config' || req.path.startsWith('/oauth')) return next();
+  return requireGoogleAuth(req, res, next);
+});
 
 app.get('/health', async (_req, res) => {
   const status = await firebase.getStatus();

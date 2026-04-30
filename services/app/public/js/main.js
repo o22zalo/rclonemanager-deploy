@@ -10,6 +10,8 @@
     return ROUTES.includes(raw) ? raw : 'oauth-gd';
   }
 
+  let authLocked = false;
+
   function setActiveRoute(route) {
     ROUTES.forEach((name) => {
       const section = name.startsWith('oauth-') ? 'oauth' : name;
@@ -30,6 +32,7 @@
       }
     });
 
+    if (authLocked && !route.startsWith('oauth-')) route = 'oauth-gd';
     window.App.Sidebar?.closeMobileSidebar();
 
     if (route === 'oauth-gd') window.App.OAuth?.setProviderFromRoute?.('gd');
@@ -118,7 +121,11 @@
 
   function setAppLocked(locked) {
     document.body.classList.toggle('auth-locked', locked);
-    document.querySelectorAll('main .section, .sidebar__nav a, .bottom-nav a').forEach((el)=>{ if (locked) el.setAttribute('aria-disabled','true'); else el.removeAttribute('aria-disabled'); });
+    const selectors = ['#section-credentials', '#section-configs', '#section-manager', '#section-rclone', '#section-settings', '[data-route=credentials]', '[data-route=configs]', '[data-route=manager]', '[data-route=rclone]', '[data-route=settings]'];
+    document.querySelectorAll(selectors.join(',')).forEach((el)=>{
+      if (locked) el.setAttribute('aria-disabled','true');
+      else el.removeAttribute('aria-disabled');
+    });
   }
 
   async function initGoogleLogin() {
@@ -130,9 +137,10 @@
       const cfg = await window.App.api.request('/api/auth/config');
       if (!cfg.googleClientId) return;
       setAppLocked(true);
+      authLocked = true;
       panel.classList.remove('hidden');
       const currentEmail = localStorage.getItem('google-login-email') || '';
-      if (currentEmail) { status.textContent = `Đã đăng nhập: ${currentEmail}`; setAppLocked(false); }
+      if (currentEmail && localStorage.getItem('google-session-token')) { status.textContent = `Đã đăng nhập: ${currentEmail}`; setAppLocked(false); authLocked = false; }
       google.accounts.id.initialize({
         client_id: cfg.googleClientId,
         callback: async (resp) => {
@@ -140,8 +148,8 @@
             const result = await window.App.api.request('/api/auth/google', { method: 'POST', body: JSON.stringify({ idToken: resp.credential }) });
             localStorage.setItem('google-login-email', result.email || '');
             localStorage.setItem('google-session-token', result.sessionToken || '');
-            status.textContent = `Đăng nhập thành công: ${result.email}`; setAppLocked(false);
-          } catch (err) { localStorage.removeItem('google-session-token'); setAppLocked(true); status.textContent = `Đăng nhập lỗi: ${err.message}`; }
+            status.textContent = `Đăng nhập thành công: ${result.email}`; setAppLocked(false); authLocked = false;
+          } catch (err) { localStorage.removeItem('google-session-token'); authLocked = true; setAppLocked(true); status.textContent = `Đăng nhập lỗi: ${err.message}`; }
         },
       });
       google.accounts.id.renderButton(btnWrap, { theme: 'outline', size: 'large', width: 300 });
