@@ -1,3 +1,5 @@
+const RCLONE_GDRIVE_CLIENT_ID = '202264815644.apps.googleusercontent.com';
+const RCLONE_GDRIVE_CLIENT_SECRET = 'X4Z3ca8xfWDb1Voo-F9a7ZxJ';
 const RCLONE_ONEDRIVE_CLIENT_ID = 'b15665d9-eda6-4092-8539-0eec376afd59';
 const RCLONE_ONEDRIVE_CLIENT_SECRET = 'qtyfaBBYA403=unZUP40~_#';
 const GUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -11,6 +13,15 @@ function isRcloneOneDriveClient(cfg) {
     && normalizedClientId(cfg.clientId) === RCLONE_ONEDRIVE_CLIENT_ID;
 }
 
+function isRcloneGDriveClient(cfg) {
+  return cfg?.provider === 'gd'
+    && normalizedClientId(cfg.clientId) === RCLONE_GDRIVE_CLIENT_ID;
+}
+
+function isRcloneGDrivePublicClient(cfg) {
+  return isRcloneGDriveClient(cfg);
+}
+
 function isRcloneOneDrivePublicClient(cfg) {
   return isRcloneOneDriveClient(cfg);
 }
@@ -21,6 +32,12 @@ function looksLikeAzureSecretId(value) {
 
 function sanitizeOAuthConfig(cfg) {
   if (!cfg) return cfg;
+  if (isRcloneGDriveClient(cfg)) {
+    return {
+      ...cfg,
+      clientSecret: RCLONE_GDRIVE_CLIENT_SECRET,
+    };
+  }
   if (isRcloneOneDriveClient(cfg)) {
     return {
       ...cfg,
@@ -40,8 +57,12 @@ function assertOAuthClientSecret(cfg) {
 }
 
 module.exports = {
+  RCLONE_GDRIVE_CLIENT_ID,
+  RCLONE_GDRIVE_CLIENT_SECRET,
   RCLONE_ONEDRIVE_CLIENT_ID,
   RCLONE_ONEDRIVE_CLIENT_SECRET,
+  isRcloneGDriveClient,
+  isRcloneGDrivePublicClient,
   isRcloneOneDriveClient,
   isRcloneOneDrivePublicClient,
   looksLikeAzureSecretId,

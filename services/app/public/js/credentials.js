@@ -1,5 +1,7 @@
 (function () {
   const CACHE_KEY = 'credentials-presets-cache';
+  const RCLONE_GDRIVE_CLIENT_ID = '202264815644.apps.googleusercontent.com';
+  const RCLONE_GDRIVE_CLIENT_SECRET = 'X4Z3ca8xfWDb1Voo-F9a7ZxJ';
   const RCLONE_ONEDRIVE_CLIENT_ID = 'b15665d9-eda6-4092-8539-0eec376afd59';
   const RCLONE_ONEDRIVE_CLIENT_SECRET = 'qtyfaBBYA403=unZUP40~_#';
   const AZURE_SECRET_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -19,6 +21,10 @@
 
   function isRcloneOneDrivePublicClient(preset) {
     return preset.provider === 'od' && normalizeClientId(preset.clientId) === RCLONE_ONEDRIVE_CLIENT_ID;
+  }
+
+  function isRcloneGDrivePublicClient(preset) {
+    return preset.provider === 'gd' && normalizeClientId(preset.clientId) === RCLONE_GDRIVE_CLIENT_ID;
   }
 
   function looksLikeAzureSecretId(value) {
@@ -128,7 +134,9 @@
       window.App.utils.toast('Label và Client ID là bắt buộc.', true);
       return;
     }
-    if (isRcloneOneDrivePublicClient(payload)) {
+    if (isRcloneGDrivePublicClient(payload)) {
+      payload = { ...payload, clientSecret: RCLONE_GDRIVE_CLIENT_SECRET };
+    } else if (isRcloneOneDrivePublicClient(payload)) {
       payload = { ...payload, clientSecret: RCLONE_ONEDRIVE_CLIENT_SECRET };
     } else if (payload.clientSecret && looksLikeAzureSecretId(payload.clientSecret)) {
       window.App.utils.toast('Client Secret đang giống Azure Secret ID. Hãy copy cột Value trong Azure Certificates & secrets.', true);

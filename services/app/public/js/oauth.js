@@ -1,4 +1,6 @@
 (function () {
+  const RCLONE_GDRIVE_CLIENT_ID = '202264815644.apps.googleusercontent.com';
+  const RCLONE_GDRIVE_CLIENT_SECRET = 'X4Z3ca8xfWDb1Voo-F9a7ZxJ';
   const RCLONE_ONEDRIVE_CLIENT_ID = 'b15665d9-eda6-4092-8539-0eec376afd59';
   const RCLONE_ONEDRIVE_CLIENT_SECRET = 'qtyfaBBYA403=unZUP40~_#';
   const AZURE_SECRET_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -8,8 +10,8 @@
       {
         label: 'rclone (GDrive client ID)',
         provider: 'gd',
-        clientId: '202264815644.apps.googleusercontent.com',
-        clientSecret: '',
+        clientId: RCLONE_GDRIVE_CLIENT_ID,
+        clientSecret: RCLONE_GDRIVE_CLIENT_SECRET,
         redirectUri: 'http://localhost:53682/',
         builtin: true,
       },
@@ -47,7 +49,14 @@
     return cfg.provider === 'od' && normalizedClientId(cfg.clientId) === RCLONE_ONEDRIVE_CLIENT_ID;
   }
 
+  function isRcloneGDrivePublicClient(cfg) {
+    return cfg.provider === 'gd' && normalizedClientId(cfg.clientId) === RCLONE_GDRIVE_CLIENT_ID;
+  }
+
   function sanitizeConfig(cfg) {
+    if (isRcloneGDrivePublicClient(cfg)) {
+      return { ...cfg, clientSecret: RCLONE_GDRIVE_CLIENT_SECRET };
+    }
     if (isRcloneOneDrivePublicClient(cfg)) {
       return { ...cfg, clientSecret: RCLONE_ONEDRIVE_CLIENT_SECRET };
     }
@@ -218,9 +227,11 @@
       clientId: $('clientId').value.trim(),
     };
     const isRcloneOneDrive = isRcloneOneDrivePublicClient(cfg);
-    const isRequired = provider === 'gd' || (provider === 'od' && mode !== 'paste' && !isRcloneOneDrive);
+    const isRcloneGDrive = isRcloneGDrivePublicClient(cfg);
+    const isRequired = (provider === 'gd' && !isRcloneGDrive)
+      || (provider === 'od' && mode !== 'paste' && !isRcloneOneDrive);
     $('clientSecretRequired').classList.toggle('hidden', !isRequired);
-    $('clientSecret').placeholder = isRcloneOneDrive
+    $('clientSecret').placeholder = isRcloneGDrive || isRcloneOneDrive
       ? 'Dùng secret mặc định của rclone'
       : 'OAuth client secret';
   }
@@ -247,7 +258,7 @@
     if (cfg.clientSecret && looksLikeAzureSecretId(cfg.clientSecret)) {
       return 'Client Secret đang giống Azure Secret ID. Hãy copy cột Value trong Azure Certificates & secrets, không copy Secret ID.';
     }
-    if (cfg.provider === 'gd' && !cfg.clientSecret) return 'Google Drive cần Client Secret để exchange token.';
+    if (cfg.provider === 'gd' && !cfg.clientSecret && !isRcloneGDrivePublicClient(cfg)) return 'Google Drive cần Client Secret để exchange token.';
     if (cfg.provider === 'od' && cfg.mode !== 'paste' && !cfg.clientSecret && !isRcloneOneDrivePublicClient(cfg)) return 'OneDrive auto flow nên dùng client secret.';
     return '';
   }
