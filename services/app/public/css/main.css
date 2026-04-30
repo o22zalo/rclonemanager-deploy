@@ -5,3 +5,8 @@
 @import url("./components.css");
 @import url("./animations.css");
 @import url("./responsive.css");
+
+.auth-locked main{filter:grayscale(.2);opacity:.55;pointer-events:none}
+.auth-locked #googleLoginPanel{pointer-events:auto;opacity:1;filter:none}
+.auth-locked .sidebar,.auth-locked .bottom-nav{pointer-events:none;opacity:.6}
+

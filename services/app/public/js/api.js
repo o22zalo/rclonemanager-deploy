@@ -1,5 +1,6 @@
 (function () {
-  const backendApiKey = localStorage.getItem('backend-api-key') || '';
+  function backendApiKey() { return localStorage.getItem('backend-api-key') || ''; }
+  function authSessionToken() { return localStorage.getItem('google-session-token') || ''; }
 
   const backendBase = window.location.protocol === 'file:' ? 'http://localhost:53682' : window.location.origin;
 
@@ -25,7 +26,8 @@
     const response = await fetch(`${backendBase}${path}`, {
       headers: {
         'Content-Type': 'application/json',
-        ...(backendApiKey ? { 'x-api-key': backendApiKey } : {}),
+        ...(backendApiKey() ? { 'x-api-key': backendApiKey() } : {}),
+        ...(authSessionToken() ? { Authorization: `Bearer ${authSessionToken()}` } : {}),
         ...(options.headers || {}),
       },
       ...options,

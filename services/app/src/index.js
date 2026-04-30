@@ -2,6 +2,7 @@ const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const crypto = require('crypto');
 
 const { handleOAuthCallback, router: oauthRouter } = require('./routes/oauth');
 const configsRouter = require('./routes/configs');
@@ -14,6 +15,38 @@ dotenv.config();
 const app = express();
 const port = Number(process.env.PORT || 53682);
 const publicDir = path.join(__dirname, '..', 'public');
+
+
+
+function signSession(email) {
+  const exp = Date.now() + (Number(process.env.AUTH_SESSION_TTL_MS || 86400000));
+  const payload = `${email}|${exp}`;
+  const sig = crypto.createHmac('sha256', process.env.AUTH_SESSION_SECRET || 'change-me').update(payload).digest('hex');
+  return Buffer.from(`${payload}|${sig}`).toString('base64url');
+}
+
+function verifySession(token) {
+  try {
+    const decoded = Buffer.from(String(token || ''), 'base64url').toString('utf8');
+    const [email, expRaw, sig] = decoded.split('|');
+    const exp = Number(expRaw || 0);
+    if (!email || !exp || Date.now() > exp) return null;
+    const payload = `${email}|${exp}`;
+    const expected = crypto.createHmac('sha256', process.env.AUTH_SESSION_SECRET || 'change-me').update(payload).digest('hex');
+    if (expected !== sig) return null;
+    return { email, exp };
+  } catch (_err) { return null; }
+}
+
+function requireGoogleAuth(req, res, next) {
+  const required = String(process.env.REQUIRE_GOOGLE_AUTH || 'true') === 'true';
+  if (!required) return next();
+  const bearer = (req.get('authorization') || '').replace(/^Bearer\s+/i, '').trim();
+  const session = verifySession(bearer);
+  if (!session) return res.status(401).json({ error: 'Google auth required.' });
+  req.user = session;
+  return next();
+}
 
 function parseAllowlist() {
   return (process.env.ALLOWED_GMAILS || '').split(',').map((v) => v.trim().toLowerCase()).filter(Boolean);
@@ -37,7 +70,8 @@ async function googleLogin(req, res) {
   const email = String(info.email || '').toLowerCase();
   const allowed = parseAllowlist();
   if (allowed.length && !allowed.includes(email)) return res.status(403).json({ error: 'Email not allowed.' });
-  res.json({ ok: true, email, name: info.name || '', picture: info.picture || '' });
+  const sessionToken = signSession(email);
+  res.json({ ok: true, email, name: info.name || '', picture: info.picture || '', sessionToken });
 }
 
 
@@ -72,6 +106,7 @@ app.get('/api/auth/config', (_req, res) => {
 });
 
 app.use('/api', apiKeyAuth);
+app.use('/api', requireGoogleAuth);
 
 app.get('/health', async (_req, res) => {
   const status = await firebase.getStatus();

@@ -116,6 +116,11 @@
   }
 
 
+  function setAppLocked(locked) {
+    document.body.classList.toggle('auth-locked', locked);
+    document.querySelectorAll('main .section, .sidebar__nav a, .bottom-nav a').forEach((el)=>{ if (locked) el.setAttribute('aria-disabled','true'); else el.removeAttribute('aria-disabled'); });
+  }
+
   async function initGoogleLogin() {
     const panel = $('googleLoginPanel');
     const btnWrap = $('googleLoginButton');
@@ -124,17 +129,19 @@
     try {
       const cfg = await window.App.api.request('/api/auth/config');
       if (!cfg.googleClientId) return;
+      setAppLocked(true);
       panel.classList.remove('hidden');
       const currentEmail = localStorage.getItem('google-login-email') || '';
-      if (currentEmail) status.textContent = `Đã đăng nhập: ${currentEmail}`;
+      if (currentEmail) { status.textContent = `Đã đăng nhập: ${currentEmail}`; setAppLocked(false); }
       google.accounts.id.initialize({
         client_id: cfg.googleClientId,
         callback: async (resp) => {
           try {
             const result = await window.App.api.request('/api/auth/google', { method: 'POST', body: JSON.stringify({ idToken: resp.credential }) });
             localStorage.setItem('google-login-email', result.email || '');
-            status.textContent = `Đăng nhập thành công: ${result.email}`;
-          } catch (err) { status.textContent = `Đăng nhập lỗi: ${err.message}`; }
+            localStorage.setItem('google-session-token', result.sessionToken || '');
+            status.textContent = `Đăng nhập thành công: ${result.email}`; setAppLocked(false);
+          } catch (err) { localStorage.removeItem('google-session-token'); setAppLocked(true); status.textContent = `Đăng nhập lỗi: ${err.message}`; }
         },
       });
       google.accounts.id.renderButton(btnWrap, { theme: 'outline', size: 'large', width: 300 });
