@@ -103,8 +103,8 @@
               </button>
               <button type="button" class="mode-card" id="modePaste" data-mode="paste">
                 <span class="mode-card__title"><span aria-hidden="true">📋</span> Paste Redirect URL</span>
-                <span class="mode-card__desc">Tạo auth URL, paste URL sau redirect, exchange token ngay trong browser.</span>
-                <span class="badge badge--yellow">Không cần backend</span>
+                <span class="mode-card__desc">Tạo auth URL, paste URL sau redirect, backend exchange token và lưu Firebase.</span>
+                <span class="badge badge--yellow">Backend exchange</span>
               </button>
             </div>
 
@@ -129,7 +129,7 @@
                   <div class="guide-list hidden" id="guideGdPaste">
                     <div class="guide-item"><span class="guide-item__index">1</span><div>Chọn preset hoặc nhập OAuth credentials tự tạo.</div></div>
                     <div class="guide-item"><span class="guide-item__index">2</span><div>Mở auth URL, đăng nhập Google, rồi copy toàn bộ URL redirect lỗi về localhost.</div></div>
-                    <div class="guide-item"><span class="guide-item__index">3</span><div>Paste URL vào bước tiếp theo để exchange token trong browser.</div></div>
+                    <div class="guide-item"><span class="guide-item__index">3</span><div>Paste URL vào bước tiếp theo để backend exchange token và lưu Firebase.</div></div>
                   </div>
                   <div class="guide-list hidden" id="guideOdAuto">
                     <div class="guide-item"><span class="guide-item__index">1</span><div>Azure Portal → App registrations → New registration.</div></div>
@@ -140,7 +140,7 @@
                   <div class="guide-list hidden" id="guideOdPaste">
                     <div class="guide-item"><span class="guide-item__index">1</span><div>Preset rclone OneDrive tự điền client secret mặc định.</div></div>
                     <div class="guide-item"><span class="guide-item__index">2</span><div>Mở auth URL, đăng nhập Microsoft, rồi copy URL redirect về localhost.</div></div>
-                    <div class="guide-item"><span class="guide-item__index">3</span><div>Paste URL để exchange token và tạo block rclone.conf.</div></div>
+                    <div class="guide-item"><span class="guide-item__index">3</span><div>Paste URL để backend exchange token, lưu Firebase và tạo block rclone.conf.</div></div>
                   </div>
                 </div>
               </div>
@@ -253,11 +253,11 @@
 
           <div id="oauthStepExchange" class="oauth-step">
             <div class="alert alert--success"><span aria-hidden="true">✅</span><div>Đã nhận code. Đang exchange token...</div></div>
-            <div class="inline"><span class="spinner" aria-hidden="true"></span><span class="text-secondary">Đang gọi token endpoint.</span></div>
+            <div class="inline"><span class="spinner" aria-hidden="true"></span><span class="text-secondary">Backend đang gọi token endpoint.</span></div>
           </div>
 
           <div id="oauthStepResult" class="oauth-step">
-            <div class="alert alert--success"><span aria-hidden="true">🎉</span><div><strong>Thành công.</strong> Config đã sẵn sàng để copy hoặc lưu Firebase.</div></div>
+            <div class="alert alert--success"><span aria-hidden="true">🎉</span><div><strong>Thành công.</strong> Config đã được backend exchange và lưu, có thể copy để dùng ngoài app.</div></div>
             <div class="panel">
               <div class="panel__header">
                 <h2 class="h4">rclone.conf</h2>

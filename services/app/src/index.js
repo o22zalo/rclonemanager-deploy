@@ -3,7 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 
-const { handleOAuthCallback } = require('./routes/oauth');
+const { handleOAuthCallback, router: oauthRouter } = require('./routes/oauth');
 const configsRouter = require('./routes/configs');
 const presetsRouter = require('./routes/presets');
 const rcloneRouter = require('./routes/rclone');
@@ -50,6 +50,7 @@ app.get('/health', async (_req, res) => {
 app.use('/api/configs', configsRouter);
 app.use('/api/presets', presetsRouter);
 app.use('/api/rclone', rcloneRouter);
+app.use('/api/oauth', oauthRouter);
 app.use('/api', (_req, res) => {
   res.status(404).json({ error: 'API endpoint not found.' });
 });

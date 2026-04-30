@@ -341,101 +341,27 @@
     showOauthStep('oauthStepExchange');
     setFlow(4);
     try {
-      let data;
-      if (cfg.provider === 'gd') {
-        const response = await fetch('https://oauth2.googleapis.com/token', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({
-            code,
-            client_id: cfg.clientId,
-            client_secret: cfg.clientSecret,
-            redirect_uri: cfg.redirectUri,
-            grant_type: 'authorization_code',
-          }),
-        });
-        data = await response.json();
-      } else {
-        const params = {
-          code,
-          client_id: cfg.clientId,
-          redirect_uri: cfg.redirectUri,
-          grant_type: 'authorization_code',
-          scope: 'https://graph.microsoft.com/Files.ReadWrite offline_access',
-        };
-        if (cfg.clientSecret) params.client_secret = cfg.clientSecret;
-        const response = await fetch('https://login.microsoftonline.com/common/oauth2/v2.0/token', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams(params),
-        });
-        data = await response.json();
-      }
-
-      if (data.error) throw new Error(`${data.error}: ${data.error_description || ''}`);
-      if (cfg.provider === 'od' && data.access_token) {
-        cfg = {
-          ...cfg,
-          driveId: await fetchOneDriveDriveId(data.access_token),
-        };
-      }
-      buildConfig(data, cfg);
+      const result = await window.App.api.request('/api/oauth/exchange', {
+        method: 'POST',
+        body: JSON.stringify({ code, config: cfg }),
+      });
+      buildServerConfig(result);
     } catch (err) {
-      showErr(err.message);
+      showErr(`Không exchange token qua backend: ${err.message}`);
     }
   }
 
-  async function fetchOneDriveDriveId(accessToken) {
-    const response = await fetch('https://graph.microsoft.com/v1.0/me/drive', {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      const detail = data.error && data.error.message ? data.error.message : response.statusText;
-      throw new Error(`Không lấy được OneDrive drive_id: ${detail}`);
-    }
-    return data.id || '';
-  }
-
-  function buildConfig(token, cfg) {
-    const expiry = new Date(Date.now() + Number(token.expires_in || 3600) * 1000).toISOString();
-    const tokenJson = JSON.stringify({
-      access_token: token.access_token,
-      token_type: token.token_type || 'Bearer',
-      refresh_token: token.refresh_token || '',
-      expiry,
-    });
-
-    const conf = cfg.provider === 'gd'
-      ? [
-        `[${cfg.remoteName}]`,
-        'type = drive',
-        `client_id = ${cfg.clientId}`,
-        `client_secret = ${cfg.clientSecret}`,
-        `scope = ${cfg.scope}`,
-        `token = ${tokenJson}`,
-      ].join('\n')
-      : [
-        `[${cfg.remoteName}]`,
-        'type = onedrive',
-        `client_id = ${cfg.clientId}`,
-        cfg.clientSecret ? `client_secret = ${cfg.clientSecret}` : '',
-        `token = ${tokenJson}`,
-        cfg.driveId ? `drive_id = ${cfg.driveId}` : '',
-        `drive_type = ${cfg.driveType || 'personal'}`,
-      ].filter(Boolean).join('\n');
-
+  function buildServerConfig(result) {
+    const record = result.record || {};
+    const conf = record.rcloneConfig || '';
+    const remoteName = record.remoteName || 'myremote';
     $('configOutput').textContent = conf;
-    $('testCommand').textContent = `rclone lsd ${cfg.remoteName}:`;
-    lastManualRecord = {
-      config: cfg,
-      token,
-      accessToken: token.access_token,
-      refreshToken: token.refresh_token || '',
-      expiry,
-      rcloneConfig: conf,
-      driveId: cfg.driveId || '',
-    };
+    $('testCommand').textContent = `rclone lsd ${remoteName}:`;
+    $('saveConfigBtn').textContent = result.action === 'updated' ? 'Đã cập nhật Firebase' : 'Đã lưu Firebase';
+    $('saveConfigBtn').disabled = true;
+    lastManualRecord = null;
+    if (window.App.Configs) window.App.Configs.loadConfigs().catch(() => {});
+    if (window.App.Manager) window.App.Manager.refreshOptions().catch(() => {});
     showOauthStep('oauthStepResult');
     setFlow(5);
   }
@@ -467,6 +393,8 @@
     sessionStorage.removeItem('rcfg');
     sessionStorage.removeItem('rstate');
     lastManualRecord = null;
+    $('saveConfigBtn').textContent = '☁️ Save to Firebase';
+    $('saveConfigBtn').disabled = false;
     showOauthStep('oauthStepConfig');
     setFlow(1);
     history.replaceState({}, '', location.pathname + location.hash);
