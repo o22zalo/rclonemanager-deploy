@@ -6,18 +6,25 @@ function normalizeEmail(value) {
   return String(value || '').trim().toLowerCase();
 }
 
-async function findByEmailOwner(emailOwner) {
+function normalizeProvider(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+async function findByEmailOwnerAndProvider(emailOwner, provider) {
   const normalized = normalizeEmail(emailOwner);
-  if (!normalized) return null;
+  const normalizedProvider = normalizeProvider(provider);
+  if (!normalized || !normalizedProvider) return null;
 
   const items = await firebase.list(COLLECTION);
   return items
-    .filter((item) => normalizeEmail(item.emailOwner || item.email_owner) === normalized)
+    .filter((item) =>
+      normalizeEmail(item.emailOwner || item.email_owner) === normalized
+      && normalizeProvider(item.provider) === normalizedProvider)
     .sort((a, b) => Number(b.updatedAt || b.createdAt || 0) - Number(a.updatedAt || a.createdAt || 0))[0] || null;
 }
 
-async function upsertByEmailOwner(record) {
-  const existing = await findByEmailOwner(record.emailOwner);
+async function upsertByEmailOwnerAndProvider(record) {
+  const existing = await findByEmailOwnerAndProvider(record.emailOwner, record.provider);
   if (!existing) {
     return {
       action: 'created',
@@ -41,6 +48,8 @@ async function upsertByEmailOwner(record) {
 
 module.exports = {
   COLLECTION,
-  findByEmailOwner,
-  upsertByEmailOwner,
+  findByEmailOwner: findByEmailOwnerAndProvider,
+  findByEmailOwnerAndProvider,
+  upsertByEmailOwner: upsertByEmailOwnerAndProvider,
+  upsertByEmailOwnerAndProvider,
 };
