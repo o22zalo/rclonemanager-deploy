@@ -140,7 +140,20 @@
       authLocked = true;
       panel.classList.remove('hidden');
       const currentEmail = localStorage.getItem('google-login-email') || '';
-      if (currentEmail && localStorage.getItem('google-session-token')) { status.textContent = `Đã đăng nhập: ${currentEmail}`; setAppLocked(false); authLocked = false; }
+      const existingToken = localStorage.getItem('google-session-token') || '';
+      if (currentEmail && existingToken) {
+        try {
+          await window.App.api.request('/api/auth/me');
+          status.textContent = `Đã đăng nhập: ${currentEmail}`;
+          setAppLocked(false);
+          authLocked = false;
+        } catch (_err) {
+          localStorage.removeItem('google-session-token');
+          localStorage.removeItem('google-login-email');
+          authLocked = true;
+          setAppLocked(true);
+        }
+      }
       google.accounts.id.initialize({
         client_id: cfg.googleClientId,
         callback: async (resp) => {
@@ -153,6 +166,13 @@
         },
       });
       google.accounts.id.renderButton(btnWrap, { theme: 'outline', size: 'large', width: 300 });
+      $('googleLogoutBtn')?.addEventListener('click', () => {
+        localStorage.removeItem('google-session-token');
+        localStorage.removeItem('google-login-email');
+        authLocked = true;
+        setAppLocked(true);
+        status.textContent = 'Đã đăng xuất. Vui lòng đăng nhập lại.';
+      });
     } catch (_err) {}
   }
 

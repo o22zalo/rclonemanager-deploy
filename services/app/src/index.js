@@ -105,6 +105,13 @@ app.get('/api/auth/config', (_req, res) => {
   });
 });
 
+app.get('/api/auth/me', (req, res) => {
+  const bearer = (req.get('authorization') || '').replace(/^Bearer\s+/i, '').trim();
+  const session = verifySession(bearer);
+  if (!session) return res.status(401).json({ error: 'Session expired.' });
+  return res.json({ ok: true, email: session.email, exp: session.exp });
+});
+
 app.use('/api', apiKeyAuth);
 app.use('/api', (req, res, next) => {
   if (req.path.startsWith('/auth/') || req.path === '/auth/config' || req.path.startsWith('/oauth')) return next();
