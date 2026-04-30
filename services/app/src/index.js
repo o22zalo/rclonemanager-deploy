@@ -66,6 +66,7 @@ app.get('/api/auth/config', (_req, res) => {
     firebaseApiKey: process.env.GOOGLE_AUTH_FIREBASE_API_KEY || '',
     firebaseAuthDomain: process.env.GOOGLE_AUTH_FIREBASE_AUTH_DOMAIN || '',
     firebaseProjectId: process.env.GOOGLE_AUTH_FIREBASE_PROJECT_ID || '',
+    googleClientId: process.env.GOOGLE_AUTH_CLIENT_ID || '',
     allowedGmails: parseAllowlist(),
   });
 });

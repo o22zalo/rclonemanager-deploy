@@ -115,6 +115,32 @@
     });
   }
 
+
+  async function initGoogleLogin() {
+    const panel = $('googleLoginPanel');
+    const btnWrap = $('googleLoginButton');
+    const status = $('googleLoginStatus');
+    if (!panel || !btnWrap || !window.google?.accounts?.id) return;
+    try {
+      const cfg = await window.App.api.request('/api/auth/config');
+      if (!cfg.googleClientId) return;
+      panel.classList.remove('hidden');
+      const currentEmail = localStorage.getItem('google-login-email') || '';
+      if (currentEmail) status.textContent = `Đã đăng nhập: ${currentEmail}`;
+      google.accounts.id.initialize({
+        client_id: cfg.googleClientId,
+        callback: async (resp) => {
+          try {
+            const result = await window.App.api.request('/api/auth/google', { method: 'POST', body: JSON.stringify({ idToken: resp.credential }) });
+            localStorage.setItem('google-login-email', result.email || '');
+            status.textContent = `Đăng nhập thành công: ${result.email}`;
+          } catch (err) { status.textContent = `Đăng nhập lỗi: ${err.message}`; }
+        },
+      });
+      google.accounts.id.renderButton(btnWrap, { theme: 'outline', size: 'large', width: 300 });
+    } catch (_err) {}
+  }
+
   function registerServiceWorker() {
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
@@ -134,6 +160,7 @@
     bindSettings();
     bindGlobalDialogs();
     registerServiceWorker();
+    await initGoogleLogin();
 
     await refreshBackendStatus();
     await window.App.Credentials?.loadPresets();

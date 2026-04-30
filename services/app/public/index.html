@@ -36,7 +36,7 @@
     </div>
     <nav class="sidebar__nav" aria-label="Primary">
       <ul class="sidebar__menu" role="list">
-        <li><a href="#oauth" class="sidebar__link sidebar__link--active" data-route="oauth-gd" data-tooltip="OAuth Google" aria-current="page"><span class="sidebar__link-icon" aria-hidden="true">🔐</span><span class="sidebar__link-label">OAuth Google</span></a></li>
+        <li><a href="#oauth-gd" class="sidebar__link sidebar__link--active" data-route="oauth-gd" data-tooltip="OAuth Google" aria-current="page"><span class="sidebar__link-icon" aria-hidden="true">🔐</span><span class="sidebar__link-label">OAuth Google</span></a></li>
         <li><a href="#oauth-od" class="sidebar__link" data-route="oauth-od" data-tooltip="OAuth OneDrive"><span class="sidebar__link-icon" aria-hidden="true">☁️</span><span class="sidebar__link-label">OAuth OneDrive</span></a></li>
         <li><a href="#credentials" class="sidebar__link" data-route="credentials" data-tooltip="Credentials"><span class="sidebar__link-icon" aria-hidden="true">⚙️</span><span class="sidebar__link-label">Credentials</span></a></li>
         <li><a href="#configs" class="sidebar__link" data-route="configs" data-tooltip="Configs"><span class="sidebar__link-icon" aria-hidden="true">📋</span><span class="sidebar__link-label">Configs</span></a></li>
@@ -62,6 +62,13 @@
   <main class="main-content" id="mainContent">
     <div class="page-wrapper">
       <section id="section-oauth" class="section section--active" aria-labelledby="oauthTitle">
+        <div class="panel hidden" id="googleLoginPanel">
+          <div class="panel__header"><h2 class="h4">Đăng nhập Google</h2></div>
+          <div class="panel__body stack">
+            <div id="googleLoginButton"></div>
+            <div class="text-secondary" id="googleLoginStatus">Vui lòng đăng nhập bằng Gmail được cấp quyền.</div>
+          </div>
+        </div>
         <div class="page-header">
           <div class="page-header__copy">
             <div class="page-header__meta">
@@ -578,6 +585,7 @@
 
   <nav class="bottom-nav" aria-label="Mobile navigation">
     <a href="#oauth-gd" class="bottom-nav__item bottom-nav__item--active" data-route="oauth-gd" aria-current="page"><span class="bottom-nav__icon" aria-hidden="true">🔐</span><span>OAuth</span></a>
+    <a href="#oauth-od" class="bottom-nav__item" data-route="oauth-od"><span class="bottom-nav__icon" aria-hidden="true">☁️</span><span>OD</span></a>
     <a href="#credentials" class="bottom-nav__item" data-route="credentials"><span class="bottom-nav__icon" aria-hidden="true">⚙️</span><span>Creds</span></a>
     <a href="#configs" class="bottom-nav__item" data-route="configs"><span class="bottom-nav__icon" aria-hidden="true">📋</span><span>Configs</span></a>
     <a href="#manager" class="bottom-nav__item" data-route="manager"><span class="bottom-nav__icon" aria-hidden="true">📊</span><span>Manage</span></a>
@@ -638,7 +646,8 @@
 
   <div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="true"></div>
 
-  <script src="/js/api.js?v=20260430-6" defer></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="/js/api.js?v=20260430-7" defer></script>
   <script src="/js/theme.js?v=20260430-6" defer></script>
   <script src="/js/sidebar.js?v=20260430-6" defer></script>
   <script src="/js/firebase-client.js?v=20260430-6" defer></script>
@@ -647,6 +656,6 @@
   <script src="/js/configs.js?v=20260430-6" defer></script>
   <script src="/js/manager.js?v=20260430-6" defer></script>
   <script src="/js/rcloneCommands.js?v=20260430-6" defer></script>
-  <script src="/js/main.js?v=20260430-6" defer></script>
+  <script src="/js/main.js?v=20260430-7" defer></script>
 </body>
 </html>
