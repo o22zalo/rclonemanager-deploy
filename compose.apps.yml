@@ -1,6 +1,6 @@
 # ================================================================
 #  compose.apps.yml — Application Layer
-#  Builds the bundled sample app from ./services/app
+#  Builds the bundled rclone OAuth Manager from ./services/app
 #
 #  Subdomain: ${PROJECT_NAME}.${DOMAIN}
 #
@@ -15,26 +15,30 @@ services:
     build:
       context: ./services/app
       dockerfile: Dockerfile
-    # Compose vẫn ưu tiên giá trị khai báo explicit trong environment bên dưới.
+    # Pass deployment-specific app secrets such as Firebase credentials.
+    # Explicit values below still override env_file values.
     env_file:
       - ./.env
     environment:
       NODE_ENV: "${NODE_ENV:-production}"
-      PORT: "${APP_PORT:-3000}"
+      PORT: "${APP_PORT:-53682}"
+      FRONTEND_URL: "${FRONTEND_URL:-}"
+      ALLOWED_ORIGINS: "${ALLOWED_ORIGINS:-}"
     ports:
-      - "127.0.0.1:${APP_HOST_PORT:-3000}:${APP_PORT:-3000}"
+      - "127.0.0.1:${APP_HOST_PORT:-53682}:${APP_PORT:-53682}"
     volumes:
       - ${DOCKER_VOLUMES_ROOT:-./.docker-volumes}/app/logs:/app/logs
+      - ${DOCKER_VOLUMES_ROOT:-./.docker-volumes}/app/data:/data
     labels:
       # Public HTTP sites behind Cloudflare Tunnel.
       - "caddy=http://${PROJECT_NAME}.${DOMAIN}, http://main.${DOMAIN}, http://${DOMAIN}, http://${PROJECT_NAME_TAILSCALE}.${TAILSCALE_TAILNET_DOMAIN}"
-      - "caddy.reverse_proxy={{upstreams ${APP_PORT:-3000}}}"
+      - "caddy.reverse_proxy={{upstreams ${APP_PORT:-53682}}}"
       - "caddy.basic_auth=/*"
       - "caddy.basic_auth.${CADDY_AUTH_USER:-admin}=${CADDY_AUTH_HASH}"
       # Internal HTTPS site for Tailscale / trusted LAN access.
       - "caddy_1=https://${PROJECT_NAME_TAILSCALE:-myapp}.${TAILSCALE_TAILNET_DOMAIN:-tailnet.local}"
       - "caddy_1.tls=internal"
-      - "caddy_1.reverse_proxy={{upstreams ${APP_PORT:-3000}}}"
+      - "caddy_1.reverse_proxy={{upstreams ${APP_PORT:-53682}}}"
       - "caddy_1.basic_auth=/*"
       - "caddy_1.basic_auth.${CADDY_AUTH_USER:-admin}=${CADDY_AUTH_HASH}"
     networks: [app_net]
@@ -44,7 +48,7 @@ services:
         - "CMD"
         - "sh"
         - "-c"
-        - "wget -qO- http://localhost:${APP_PORT:-3000}${HEALTH_PATH:-/health} || exit 1"
+        - "wget -qO- http://localhost:${APP_PORT:-53682}${HEALTH_PATH:-/health} || exit 1"
       interval: 30s
       timeout: 5s
       retries: 3

@@ -97,6 +97,41 @@ function isValidHttpsJsonUrl(v) {
   }
 }
 
+function isHttpUrl(v) {
+  try {
+    const u = new URL(v);
+    return u.protocol === "http:" || u.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function validateHttpUrl(v) {
+  return isHttpUrl(v) ? null : "must be an http(s) URL";
+}
+
+function validateOriginList(v) {
+  const items = v.split(",").map((item) => item.trim()).filter(Boolean);
+  if (!items.length) return null;
+  const invalid = items.find((item) => !isHttpUrl(item));
+  return invalid ? `invalid origin: ${invalid}` : null;
+}
+
+function validateFirebaseDatabaseUrl(v) {
+  if (!isHttpUrl(v)) return "must be an http(s) Firebase Realtime Database URL";
+  if (v.endsWith(".json")) return "must be the database root URL, not a .json REST path";
+  return null;
+}
+
+function validateJsonObject(v) {
+  try {
+    const parsed = JSON.parse(v);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? null : "must be a JSON object";
+  } catch (err) {
+    return `invalid JSON: ${err.message}`;
+  }
+}
+
 function buildAppHost(project, domain) {
   const p = (project || "").trim().toLowerCase();
   const d = (domain || "").trim().toLowerCase();
@@ -127,6 +162,31 @@ checkPort("WEBSSH_HOST_PORT", false);
 checkOptional("NODE_ENV", "app runtime env");
 checkOptional("HEALTH_PATH", "health endpoint path", (v) => (v.startsWith("/") ? null : "must start with '/'"));
 checkOptional("DOCKER_SOCK", "docker socket path override");
+checkOptional("FRONTEND_URL", "rclone OAuth callback/frontend base URL", validateHttpUrl);
+checkOptional("ALLOWED_ORIGINS", "comma-separated CORS origins", validateOriginList);
+checkOptional("FIREBASE_DATABASE_URL", "rclone manager Firebase Realtime Database URL", validateFirebaseDatabaseUrl);
+checkOptional("FIREBASE_SERVICE_ACCOUNT_JSON", "Firebase service account JSON", validateJsonObject);
+checkOptional("FIREBASE_SERVICE_ACCOUNT_PATH", "container path to mounted Firebase service account file");
+checkOptional("FIREBASE_DATABASE_SECRET", "Firebase Realtime Database legacy secret");
+checkOptional("ENCRYPTION_KEY", "secret used to encrypt stored OAuth client secrets", (v) =>
+  v.length >= 16 ? null : "should be at least 16 characters"
+);
+
+const hasFirebaseUrl = Boolean((env.FIREBASE_DATABASE_URL || "").trim());
+const hasServiceAccount = Boolean(
+  (env.FIREBASE_SERVICE_ACCOUNT_JSON || "").trim() ||
+  (env.FIREBASE_SERVICE_ACCOUNT_PATH || "").trim()
+);
+const hasDatabaseSecret = Boolean((env.FIREBASE_DATABASE_SECRET || "").trim());
+if (!hasFirebaseUrl && (hasServiceAccount || hasDatabaseSecret)) {
+  errors.push("FIREBASE_DATABASE_URL is required when Firebase credentials are set");
+}
+if (hasFirebaseUrl && !hasServiceAccount && !hasDatabaseSecret) {
+  warnings.push("FIREBASE_DATABASE_URL set without credentials -> app may fall back to offline memory mode");
+}
+if (hasServiceAccount && hasDatabaseSecret) {
+  warnings.push("Both Firebase service account and database secret are set -> service account mode takes precedence");
+}
 
 // 3) Flags
 for (const key of ["ENABLE_DOZZLE", "ENABLE_FILEBROWSER", "ENABLE_WEBSSH", "ENABLE_TAILSCALE"]) {

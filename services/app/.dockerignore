@@ -1,0 +1,7 @@
+node_modules
+.git
+.env
+serviceAccount.json
+npm-debug.log
+coverage
+docs

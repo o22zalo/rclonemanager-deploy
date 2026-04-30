@@ -1,27 +1,50 @@
 # App service (`compose.apps.yml`)
 
 ## Vai trò
-- Service ứng dụng chính, mặc định build từ `services/app`.
+- Service ứng dụng chính, build rclone OAuth Manager từ `services/app`.
+- Serve frontend SPA/PWA từ `public/`, API Express từ `src/`, và OAuth callback trên cùng port.
+- Image có cài `rclone` để chạy lệnh rclone thật bên trong container.
 
 ## Cấu hình chính
-- Image local tag: `${PROJECT_NAME}-app:local`
-- Build context: `./services/app`
-- Port expose localhost: `127.0.0.1:${APP_HOST_PORT}:${APP_PORT}`
-- Logs volume: `${DOCKER_VOLUMES_ROOT:-./.docker-volumes}/app/logs:/app/logs`
-- Healthcheck: `wget http://localhost:${APP_PORT}${HEALTH_PATH}`
+- Service name: `app`.
+- Image local tag: `${PROJECT_NAME}-app:local`.
+- Build context: `./services/app`.
+- Internal app port: `${APP_PORT}`.
+- Host publish: `127.0.0.1:${APP_HOST_PORT}:${APP_PORT}`.
+- Healthcheck: `wget http://localhost:${APP_PORT}${HEALTH_PATH}`.
+- Runtime data:
+  - `${DOCKER_VOLUMES_ROOT:-./.docker-volumes}/app/logs:/app/logs`
+  - `${DOCKER_VOLUMES_ROOT:-./.docker-volumes}/app/data:/data`
 
 ## ENV bắt buộc
 - `APP_PORT`: port app lắng nghe trong container.
 - `PROJECT_NAME`, `DOMAIN`: tạo hostname public.
-- `CADDY_AUTH_USER`, `CADDY_AUTH_HASH`: basic auth.
+- `CADDY_AUTH_USER`, `CADDY_AUTH_HASH`: basic auth trước app.
 
-## ENV optional
-- `APP_HOST_PORT` (default 3000): chỉ truy cập localhost host machine.
-- `NODE_ENV` (default production).
+## ENV app optional
+- `APP_HOST_PORT` (default `53682`): port localhost trên host machine.
+- `NODE_ENV` (default `production`).
 - `HEALTH_PATH` (default `/health`).
-- `DOCKER_VOLUMES_ROOT` (default `./.docker-volumes`).
-- `TAILSCALE_TAILNET_DOMAIN`: dùng cho route HTTPS nội bộ qua caddy_1.
+- `FRONTEND_URL`: base URL dùng sau OAuth callback. Để trống thì app redirect về cùng host nhận callback.
+- `ALLOWED_ORIGINS`: danh sách origin CORS, phân tách bằng dấu phẩy. Để trống cho UI cùng origin.
+- `FIREBASE_DATABASE_URL`: Firebase Realtime Database root URL.
+- `FIREBASE_SERVICE_ACCOUNT_JSON`: service account JSON một dòng.
+- `FIREBASE_SERVICE_ACCOUNT_PATH`: path file service account bên trong container.
+- `FIREBASE_DATABASE_SECRET`: legacy database secret.
+- `ENCRYPTION_KEY`: mã hóa `clientSecret` trước khi lưu Firebase.
+
+## Firebase mode
+- Nếu không cấu hình Firebase, app vẫn khởi động ở memory mode để kiểm thử, nhưng dữ liệu mất khi restart.
+- Production nên dùng một trong hai mode:
+  - `FIREBASE_DATABASE_URL` + `FIREBASE_SERVICE_ACCOUNT_JSON`
+  - `FIREBASE_DATABASE_URL` + `FIREBASE_DATABASE_SECRET`
+- Nếu dùng `FIREBASE_SERVICE_ACCOUNT_PATH`, cần thêm bind mount file service account vào đúng path container đó.
+
+## Rclone local paths
+- Lệnh cloud-to-cloud không cần volume thêm.
+- Lệnh đọc/ghi file local phải dùng path trong container, ví dụ `/data/...`.
+- Host folder tương ứng là `${DOCKER_VOLUMES_ROOT:-./.docker-volumes}/app/data`.
 
 ## Routing
-- Public host: `${PROJECT_NAME}.${DOMAIN}` (+ alias).
-- Internal HTTPS host: `${PROJECT_NAME}.${TAILSCALE_TAILNET_DOMAIN}` với `tls internal`.
+- Public host: `${PROJECT_NAME}.${DOMAIN}` (+ alias `main.${DOMAIN}` và `${DOMAIN}`).
+- Internal HTTPS host: `${PROJECT_NAME_TAILSCALE}.${TAILSCALE_TAILNET_DOMAIN}` với `tls internal`.

@@ -1,0 +1,15 @@
+tunnel: fffd009c-4c98-41bc-ace7-a0fdcd94c909
+credentials-file: /etc/cloudflared/credentials.json
+
+ingress:
+  - hostname: rclonemanager.dpdns.org
+    service: http://caddy:80
+  - hostname: main.rclonemanager.dpdns.org
+    service: http://caddy:80
+  - hostname: ttyd.rclonemanager.dpdns.org
+    service: http://caddy:80
+  - hostname: dozzle.rclonemanager.dpdns.org
+    service: http://caddy:80
+  - hostname: files.rclonemanager.dpdns.org
+    service: http://caddy:80
+  - service: http_status:404

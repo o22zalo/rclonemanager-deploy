@@ -1,16 +1,26 @@
 {
-  "name": "my-docker-app",
+  "name": "rclone-manager",
   "version": "1.0.0",
-  "description": "Hello World Node.js service",
-  "main": "index.js",
+  "description": "Local rclone OAuth token manager for Google Drive and OneDrive.",
+  "main": "src/index.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "node --watch index.js"
+    "start": "node src/index.js",
+    "check": "node --check src/index.js && node --check src/routes/oauth.js && node --check src/routes/configs.js && node --check src/routes/presets.js && node --check src/routes/rclone.js && node --check src/services/firebase.js && node --check src/services/configStore.js && node --check src/services/rcloneRunner.js && node --check src/services/tokenExchange.js && node --check src/services/tokenRefresh.js && node --check src/services/cloudApi.js && node --check src/utils/stateParser.js && node --check src/utils/configBuilder.js && node --check src/utils/encryption.js && node --check src/utils/oauthClients.js"
   },
+  "keywords": [
+    "rclone",
+    "oauth",
+    "google-drive",
+    "onedrive"
+  ],
+  "license": "MIT",
   "dependencies": {
-    "express": "^4.18.2"
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "firebase-admin": "^13.0.2"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   }
 }
