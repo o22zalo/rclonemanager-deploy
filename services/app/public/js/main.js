@@ -104,6 +104,13 @@
     $('exportAllConfigsBtn')?.addEventListener('click', exportAllConfigs);
   }
 
+  function bindGlobalDialogs() {
+    document.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape") return;
+      document.querySelectorAll(".modal.modal--open").forEach((m)=>m.classList.remove("modal--open"));
+    });
+  }
+
   function registerServiceWorker() {
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
@@ -121,6 +128,7 @@
     window.App.Manager?.init();
     window.App.RcloneCommands?.init();
     bindSettings();
+    bindGlobalDialogs();
     registerServiceWorker();
 
     await refreshBackendStatus();
