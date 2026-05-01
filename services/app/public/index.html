@@ -47,20 +47,8 @@
     </nav>
     <div class="sidebar__footer">
       <div class="sidebar-auth hidden" id="googleLoginPanel" aria-live="polite">
-        <div class="sidebar-auth__session">
-          <span class="sidebar-auth__avatar" id="googleLoginAvatar" aria-hidden="true">G</span>
-          <div class="sidebar-auth__identity">
-            <div class="sidebar-auth__header">
-              <span class="sidebar-auth__title">Google Auth</span>
-              <span class="sidebar-auth__state sidebar-auth__state--out" id="googleLoginState">Chưa đăng nhập</span>
-            </div>
-            <div class="sidebar-auth__status" id="googleLoginStatus">Gmail được cấp quyền</div>
-          </div>
-        </div>
-        <div class="sidebar-auth__actions">
-          <div class="sidebar-auth__primary-action" id="googleLoginButton"></div>
-          <button type="button" class="btn btn--secondary btn--sm hidden" id="googleLogoutBtn">Đăng xuất</button>
-        </div>
+        <div class="sidebar-auth__actions" id="googleLoginButton"></div>
+        <div class="sidebar-auth__status hidden" id="googleLoginStatus">Gmail được cấp quyền</div>
       </div>
       <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle dark/light mode">
         <span class="theme-toggle__icon--light" aria-hidden="true">☀️</span>
@@ -82,11 +70,11 @@
           <div class="page-header__copy">
             <div class="page-header__meta">
               <button class="mobile-hamburger" id="mobileMenuButton" type="button" aria-label="Open navigation">☰</button>
-              <span class="badge badge--blue">OAuth Auth</span>
+              <span class="badge badge--blue" id="oauthProviderBadge">Google Drive</span>
               <span class="badge badge--gray" id="backendStatusBadge">Backend unknown</span>
             </div>
-            <h1 id="oauthTitle">Tạo rclone config</h1>
-            <p>Google Drive và OneDrive, với auto callback qua backend hoặc paste redirect URL thủ công.</p>
+            <h1 id="oauthTitle">Tạo Google Drive config</h1>
+            <p id="oauthSubtitle">Chọn direct auth hoặc parse URL redirect để lưu config Google Drive.</p>
           </div>
         </div>
 
@@ -115,20 +103,15 @@
           <div id="oauthStepConfig" class="oauth-step oauth-step--active">
             <div class="mode-grid" role="group" aria-label="OAuth mode">
               <button type="button" class="mode-card mode-card--selected" id="modeAuto" data-mode="auto">
-                <span class="mode-card__title"><span aria-hidden="true">⚡</span> Auto Redirect</span>
-                <span class="mode-card__desc">Backend tại localhost nhận callback, exchange token và lưu Firebase.</span>
+                <span class="mode-card__title"><span aria-hidden="true">⚡</span> Direct Auth</span>
+                <span class="mode-card__desc">Mở provider auth, backend nhận callback, exchange token và lưu Firebase.</span>
                 <span class="badge badge--green">Khuyến nghị</span>
               </button>
               <button type="button" class="mode-card" id="modePaste" data-mode="paste">
-                <span class="mode-card__title"><span aria-hidden="true">📋</span> Paste Redirect URL</span>
-                <span class="mode-card__desc">Tạo auth URL, paste URL sau redirect, backend exchange token và lưu Firebase.</span>
+                <span class="mode-card__title"><span aria-hidden="true">📋</span> Parse từ URL</span>
+                <span class="mode-card__desc">Tạo auth URL, paste URL sau redirect để backend parse code và lưu Firebase.</span>
                 <span class="badge badge--yellow">Backend exchange</span>
               </button>
-            </div>
-
-            <div class="provider-tabs" role="group" aria-label="Provider">
-              <button type="button" class="provider-tab provider-tab--active" data-provider="gd">🟦 Google Drive</button>
-              <button type="button" class="provider-tab" data-provider="od">☁️ OneDrive</button>
             </div>
 
             <div class="grid grid--2">
@@ -147,7 +130,7 @@
                   <div class="guide-list hidden" id="guideGdPaste">
                     <div class="guide-item"><span class="guide-item__index">1</span><div>Chọn preset hoặc nhập OAuth credentials tự tạo.</div></div>
                     <div class="guide-item"><span class="guide-item__index">2</span><div>Mở auth URL, đăng nhập Google, rồi copy toàn bộ URL redirect lỗi về localhost.</div></div>
-                    <div class="guide-item"><span class="guide-item__index">3</span><div>Paste URL vào bước tiếp theo để backend exchange token và lưu Firebase.</div></div>
+                    <div class="guide-item"><span class="guide-item__index">3</span><div>Dán URL vào bước tiếp theo để backend parse code, exchange token và lưu Firebase.</div></div>
                   </div>
                   <div class="guide-list hidden" id="guideOdAuto">
                     <div class="guide-item"><span class="guide-item__index">1</span><div>Azure Portal → App registrations → New registration.</div></div>
@@ -158,19 +141,19 @@
                   <div class="guide-list hidden" id="guideOdPaste">
                     <div class="guide-item"><span class="guide-item__index">1</span><div>Preset rclone OneDrive tự điền client secret mặc định.</div></div>
                     <div class="guide-item"><span class="guide-item__index">2</span><div>Mở auth URL, đăng nhập Microsoft, rồi copy URL redirect về localhost.</div></div>
-                    <div class="guide-item"><span class="guide-item__index">3</span><div>Paste URL để backend exchange token, lưu Firebase và tạo block rclone.conf.</div></div>
+                    <div class="guide-item"><span class="guide-item__index">3</span><div>Dán URL để backend parse code, exchange token, lưu Firebase và tạo block rclone.conf.</div></div>
                   </div>
                 </div>
               </div>
 
               <div class="panel">
                 <div class="panel__header">
-                  <h2 class="h4">Credentials</h2>
+                  <h2 class="h4" id="credentialsPanelTitle">Google Drive credentials</h2>
                   <button type="button" class="btn btn--ghost btn--sm" id="reloadPresetsBtn">↻ Reload</button>
                 </div>
                 <div class="panel__body stack">
                   <div class="form-field">
-                    <label class="label" for="oauthPreset">Preset</label>
+                    <label class="label" for="oauthPreset" id="oauthPresetLabel">Google Drive preset</label>
                     <select class="select" id="oauthPreset"></select>
                   </div>
                   <div class="grid grid--2">
@@ -232,7 +215,7 @@
               </div>
             </div>
 
-            <button type="button" class="btn btn--primary" id="oauthPrimaryBtn"><span id="oauthPrimaryIcon">🚀</span><span id="oauthPrimaryLabel">Authorize →</span></button>
+            <button type="button" class="btn btn--primary" id="oauthPrimaryBtn"><span id="oauthPrimaryIcon">🚀</span><span id="oauthPrimaryLabel">Direct Auth →</span></button>
           </div>
 
           <div id="oauthStepAuthorize" class="oauth-step">
@@ -266,7 +249,7 @@
                 <div class="panel__body stack">
                   <label class="label" for="pastedUrl">URL từ address bar sau khi authorize</label>
                   <textarea class="textarea" id="pastedUrl" rows="4" placeholder="http://localhost:53682/?code=...&state=..."></textarea>
-                  <button type="button" class="btn btn--primary" id="extractTokenBtn">⚡ Extract & Exchange Token</button>
+                  <button type="button" class="btn btn--primary" id="extractTokenBtn">⚡ Parse & Exchange Token</button>
                 </div>
               </div>
             </div>
@@ -659,11 +642,11 @@
   <script src="/js/theme.js?v=20260430-6" defer></script>
   <script src="/js/sidebar.js?v=20260430-6" defer></script>
   <script src="/js/firebase-client.js?v=20260501-1" defer></script>
-  <script src="/js/oauth.js?v=20260430-6" defer></script>
+  <script src="/js/oauth.js?v=20260501-4" defer></script>
   <script src="/js/credentials.js?v=20260430-6" defer></script>
   <script src="/js/configs.js?v=20260430-6" defer></script>
   <script src="/js/manager.js?v=20260430-6" defer></script>
   <script src="/js/rcloneCommands.js?v=20260501-1" defer></script>
-  <script src="/js/main.js?v=20260501-3" defer></script>
+  <script src="/js/main.js?v=20260501-4" defer></script>
 </body>
 </html>

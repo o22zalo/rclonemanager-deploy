@@ -140,7 +140,20 @@
     };
     Object.values(guideMap).forEach((id) => $(id)?.classList.add('hidden'));
     $(guideMap[key])?.classList.remove('hidden');
-    $('guideModeBadge').textContent = `${provider === 'gd' ? 'Google' : 'OneDrive'} ${mode === 'auto' ? 'Auto' : 'Paste'}`;
+    $('guideModeBadge').textContent = `${providerLabel()} ${mode === 'auto' ? 'Direct' : 'Parse'}`;
+  }
+
+  function providerLabel() {
+    return provider === 'gd' ? 'Google Drive' : 'OneDrive';
+  }
+
+  function updateProviderText() {
+    const label = providerLabel();
+    if ($('oauthProviderBadge')) $('oauthProviderBadge').textContent = label;
+    if ($('oauthTitle')) $('oauthTitle').textContent = `Tạo ${label} config`;
+    if ($('oauthSubtitle')) $('oauthSubtitle').textContent = `Chọn direct auth hoặc parse URL redirect để lưu config ${label}.`;
+    if ($('credentialsPanelTitle')) $('credentialsPanelTitle').textContent = `${label} credentials`;
+    if ($('oauthPresetLabel')) $('oauthPresetLabel').textContent = `${label} preset`;
   }
 
   function updateRedirectText() {
@@ -158,19 +171,18 @@
     $('redirectAutoPanel').classList.toggle('hidden', mode !== 'auto');
     $('redirectPastePanel').classList.toggle('hidden', mode !== 'paste');
     $('oauthPrimaryIcon').textContent = mode === 'auto' ? '🚀' : '🔗';
-    $('oauthPrimaryLabel').textContent = mode === 'auto' ? 'Authorize →' : 'Generate Auth URL →';
+    $('oauthPrimaryLabel').textContent = mode === 'auto' ? 'Direct Auth →' : 'Generate URL →';
     renderGuides();
     updateSecretRequired();
   }
 
   function updateProviderUI() {
-    document.querySelectorAll('[data-provider]').forEach((btn) => {
-      btn.classList.toggle('provider-tab--active', btn.dataset.provider === provider);
-    });
+    updateProviderText();
     $('scopeWrap').classList.toggle('hidden', provider !== 'gd');
     $('driveTypeWrap').classList.toggle('hidden', provider !== 'od');
     renderGuides();
-    renderPresetOptions();
+    renderPresetOptions(true);
+    applySelectedPreset();
     updateSecretRequired();
   }
 
@@ -197,7 +209,7 @@
     return custom.concat(saved, BUILTIN_PRESETS[provider] || []);
   }
 
-  function renderPresetOptions() {
+  function renderPresetOptions(reset = false) {
     const select = $('oauthPreset');
     if (!select) return;
     const previous = select.value;
@@ -208,7 +220,7 @@
       option.textContent = preset.builtin ? `${preset.label} (built-in)` : preset.label;
       select.appendChild(option);
     });
-    if (previous && Number(previous) < select.options.length) select.value = previous;
+    if (!reset && previous && Number(previous) < select.options.length) select.value = previous;
   }
 
   function applySelectedPreset() {
@@ -261,7 +273,7 @@
       return 'Client Secret đang giống Azure Secret ID. Hãy copy cột Value trong Azure Certificates & secrets, không copy Secret ID.';
     }
     if (cfg.provider === 'gd' && !cfg.clientSecret && !isRcloneGDrivePublicClient(cfg)) return 'Google Drive cần Client Secret để exchange token.';
-    if (cfg.provider === 'od' && cfg.mode !== 'paste' && !cfg.clientSecret && !isRcloneOneDrivePublicClient(cfg)) return 'OneDrive auto flow nên dùng client secret.';
+    if (cfg.provider === 'od' && cfg.mode !== 'paste' && !cfg.clientSecret && !isRcloneOneDrivePublicClient(cfg)) return 'OneDrive Direct Auth nên dùng client secret.';
     return '';
   }
 
@@ -290,7 +302,7 @@
     }
 
     if (mode === 'auto' && !window.App.state.backend.online) {
-      window.App.utils.toast('Backend offline. Chuyển sang Paste Redirect URL để chạy thủ công.', true);
+      window.App.utils.toast('Backend offline. Chuyển sang Parse từ URL để chạy thủ công.', true);
       selectMode('paste');
       return;
     }
@@ -316,7 +328,7 @@
   function extractFromPastedUrl() {
     const raw = $('pastedUrl').value.trim();
     if (!raw) {
-      window.App.utils.toast('Paste URL vào ô trên.', true);
+      window.App.utils.toast('Dán URL vào ô trên.', true);
       return;
     }
 
@@ -416,9 +428,6 @@
   function bindEvents() {
     document.querySelectorAll('[data-mode]').forEach((btn) => {
       btn.addEventListener('click', () => selectMode(btn.dataset.mode));
-    });
-    document.querySelectorAll('[data-provider]').forEach((btn) => {
-      btn.addEventListener('click', () => setProvider(btn.dataset.provider));
     });
     $('oauthPreset')?.addEventListener('change', applySelectedPreset);
     $('emailOwner')?.addEventListener('blur', () => { if (!$('remoteName').value.trim()) $('remoteName').value = `${provider}-${($('emailOwner').value.trim().split('@')[0] || 'owner').replace(/[^a-z0-9]+/ig, '_')}`; });

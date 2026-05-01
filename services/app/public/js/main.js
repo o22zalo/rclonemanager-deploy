@@ -144,22 +144,7 @@
     const panel = $('googleLoginPanel');
     const btnWrap = $('googleLoginButton');
     const status = $('googleLoginStatus');
-    const stateBadge = $('googleLoginState');
-    const avatar = $('googleLoginAvatar');
-    const logoutBtn = $('googleLogoutBtn');
     if (!panel || !btnWrap || !window.App.FirebaseClient) return true;
-
-    const setStateBadge = (state, label) => {
-      if (!stateBadge) return;
-      stateBadge.textContent = label;
-      stateBadge.className = `sidebar-auth__state sidebar-auth__state--${state}`;
-    };
-
-    const setAvatar = (email) => {
-      if (!avatar) return;
-      const first = String(email || 'G').trim().charAt(0).toUpperCase();
-      avatar.textContent = first || 'G';
-    };
 
     const setStatus = (message) => {
       if (!status) return;
@@ -167,39 +152,51 @@
       status.title = message;
     };
 
-    const setLoginButtonLabel = (label) => {
-      const btn = $('googleFirebaseLoginBtn');
-      if (!btn) return;
+    const renderAuthButton = ({ id, label, variant = 'primary', disabled = false, onClick }) => {
+      btnWrap.innerHTML = '';
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.id = id;
+      btn.className = `btn btn--${variant} btn--sm sidebar-auth__button`;
       btn.textContent = label;
       btn.title = label;
       btn.setAttribute('aria-label', label);
-    };
-
-    const setLoginButtonDisabled = (disabled) => {
-      const btn = $('googleFirebaseLoginBtn');
-      if (!btn) return;
       btn.disabled = disabled;
+      if (typeof onClick === 'function') btn.addEventListener('click', onClick);
+      btnWrap.appendChild(btn);
     };
 
     const setLoggedOut = (message, badgeState = 'out', badgeLabel = 'Chưa đăng nhập', loginDisabled = false) => {
       authLocked = true;
       setAppLocked(true);
       protectedDataLoaded = false;
-      setStateBadge(badgeState, badgeLabel);
-      setLoginButtonLabel('Đăng nhập Google');
-      setLoginButtonDisabled(loginDisabled);
-      setAvatar('G');
-      logoutBtn?.classList.add('hidden');
+      renderAuthButton({
+        id: 'googleFirebaseLoginBtn',
+        label: badgeState === 'warn' ? badgeLabel : 'Đăng nhập Google',
+        disabled: loginDisabled,
+        onClick: async () => {
+          try {
+            setStatus('Đang mở Google sign-in...');
+            await window.App.FirebaseClient.signIn();
+          } catch (err) {
+            setLoggedOut(`Đăng nhập lỗi: ${err.message}`);
+          }
+        },
+      });
       setStatus(message || 'Chọn Gmail được cấp quyền');
       setActiveRoute(routeFromHash());
     };
 
     const setLoggedIn = async (email) => {
-      setStateBadge('in', 'Đã đăng nhập');
-      setLoginButtonLabel('Đổi tài khoản');
-      setLoginButtonDisabled(false);
-      setAvatar(email);
-      logoutBtn?.classList.remove('hidden');
+      renderAuthButton({
+        id: 'googleLogoutBtn',
+        label: `Đăng xuất ${email}`,
+        variant: 'secondary',
+        onClick: () => {
+          window.App.FirebaseClient.signOut().catch(() => {});
+          setLoggedOut('Đã đăng xuất. Vui lòng đăng nhập lại.');
+        },
+      });
       setStatus(email);
       setAppLocked(false);
       authLocked = false;
@@ -230,26 +227,12 @@
       });
       if (!cfg.required) return true;
       panel.classList.remove('hidden');
-      btnWrap.innerHTML = '<button type="button" class="btn btn--primary" id="googleFirebaseLoginBtn">Đăng nhập Google</button>';
       if (!cfg.configured) {
         setLoggedOut('Firebase Auth chưa được cấu hình trong env.', 'warn', 'Chưa cấu hình', true);
         return false;
       }
 
       setLoggedOut('Vui lòng đăng nhập bằng Gmail được cấp quyền.');
-      $('googleFirebaseLoginBtn')?.addEventListener('click', async () => {
-        try {
-          setStatus('Đang mở Google sign-in...');
-          await window.App.FirebaseClient.signIn();
-        } catch (err) {
-          setLoggedOut(`Đăng nhập lỗi: ${err.message}`);
-        }
-      });
-      $('googleLogoutBtn')?.addEventListener('click', () => {
-        window.App.FirebaseClient.signOut().catch(() => {});
-        setLoggedOut('Đã đăng xuất. Vui lòng đăng nhập lại.');
-      });
-
       const currentEmail = localStorage.getItem('google-login-email') || '';
       const existingToken = localStorage.getItem('google-session-token') || '';
       if (currentEmail && existingToken) {
@@ -274,7 +257,7 @@
   function registerServiceWorker() {
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js?v=20260501-3').catch(() => {});
+        navigator.serviceWorker.register('/sw.js?v=20260501-4').catch(() => {});
       });
     }
   }
