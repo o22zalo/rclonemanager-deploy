@@ -62,9 +62,22 @@
     font-weight: var(--font-weight-medium);
   }
 
+  .bottom-nav__item .nav-disabled-label {
+    margin-left: 0;
+    padding: 0;
+    border: 0;
+    font-size: 0.5rem;
+    line-height: 1;
+  }
+
   .bottom-nav__item--active {
     color: var(--color-primary-600);
     background-color: var(--color-interactive-selected);
+  }
+
+  .bottom-nav__item.nav-link--disabled.bottom-nav__item--active {
+    color: var(--color-text-disabled);
+    background-color: transparent;
   }
 
   [data-theme="dark"] .bottom-nav__item--active {

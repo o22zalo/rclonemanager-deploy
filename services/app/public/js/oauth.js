@@ -292,7 +292,14 @@
     }
   }
 
+  function requireGoogleLogin() {
+    if (!document.body.classList.contains('auth-locked')) return false;
+    window.App.utils.toast('Vui lòng đăng nhập Google trước khi sử dụng OAuth.', true);
+    return true;
+  }
+
   function step1Action() {
+    if (requireGoogleLogin()) return;
     const cfg = getFormConfig();
     const emailOwner = $('emailOwner').value.trim();
     const validation = validateConfig(cfg, emailOwner);
@@ -326,6 +333,7 @@
   }
 
   function extractFromPastedUrl() {
+    if (requireGoogleLogin()) return;
     const raw = $('pastedUrl').value.trim();
     if (!raw) {
       window.App.utils.toast('Dán URL vào ô trên.', true);
@@ -370,18 +378,70 @@
         method: 'POST',
         body: JSON.stringify({ code, config: cfg }),
       });
-      buildServerConfig(result);
+      await buildServerConfig(result);
     } catch (err) {
       showErr(`Không exchange token qua backend: ${err.message}`);
     }
   }
 
-  function buildServerConfig(result) {
+  function setRcloneCheckStatus(label, tone = 'gray') {
+    const status = $('oauthRcloneCheckStatus');
+    if (!status) return;
+    status.className = `badge badge--${tone}`;
+    status.textContent = label;
+  }
+
+  function renderRcloneCheckOutput(result) {
+    const output = $('oauthRcloneCheckOutput');
+    if (!output) return;
+    const body = result.json
+      ? JSON.stringify(result.json, null, 2)
+      : (result.stdout || '');
+    const parseMessage = result.jsonParseError ? `\nJSON parse error: ${result.jsonParseError}` : '';
+    const truncatedMessage = result.truncated ? '\nOutput truncated at 2 MB.' : '';
+    output.textContent = `${body || '(empty)'}${parseMessage}${truncatedMessage}`;
+    if (result.stderr) output.textContent += `\n\nstderr:\n${result.stderr}`;
+  }
+
+  async function runSavedConfigAbout(record) {
+    if (!record.id || !record.remoteName) {
+      setRcloneCheckStatus('Không có config id', 'yellow');
+      $('oauthRcloneCheckOutput').textContent = 'Không thể chạy rclone about vì response thiếu config id hoặc remote name.';
+      return;
+    }
+
+    const remote = `${record.remoteName}:`;
+    const commandText = `rclone about ${remote} --json`;
+    if ($('aboutCommand')) $('aboutCommand').textContent = commandText;
+    setRcloneCheckStatus('Đang chạy', 'yellow');
+    $('oauthRcloneCheckOutput').textContent = 'Backend đang chạy rclone about bằng config vừa lưu...';
+
+    const result = await window.App.api.request('/api/rclone/run', {
+      method: 'POST',
+      body: JSON.stringify({
+        command: ['about', remote, '--json'],
+        configIds: [record.id],
+        outputMode: 'json',
+        timeoutMs: 120000,
+      }),
+      allowStatuses: [422],
+    });
+
+    renderRcloneCheckOutput(result);
+    const ok = result.exitCode === 0 && !result.timedOut;
+    setRcloneCheckStatus(ok ? 'OK' : 'Lỗi', ok ? 'green' : 'red');
+    if (!ok) window.App.utils.toast('rclone about trả về lỗi. Xem panel Rclone about check.', true);
+  }
+
+  async function buildServerConfig(result) {
     const record = result.record || {};
     const conf = record.rcloneConfig || '';
     const remoteName = record.remoteName || 'myremote';
     $('configOutput').textContent = conf;
     $('testCommand').textContent = `rclone lsd ${remoteName}:`;
+    if ($('aboutCommand')) $('aboutCommand').textContent = `rclone about ${remoteName}: --json`;
+    setRcloneCheckStatus('Đang chạy', 'yellow');
+    if ($('oauthRcloneCheckOutput')) $('oauthRcloneCheckOutput').textContent = 'Đang chờ backend chạy rclone about...';
     $('saveConfigBtn').textContent = result.action === 'updated' ? 'Đã cập nhật Firebase' : 'Đã lưu Firebase';
     $('saveConfigBtn').disabled = true;
     lastManualRecord = null;
@@ -389,6 +449,22 @@
     if (window.App.Manager) window.App.Manager.refreshOptions().catch(() => {});
     showOauthStep('oauthStepResult');
     setFlow(5);
+    try {
+      await runSavedConfigAbout(record);
+    } catch (err) {
+      setRcloneCheckStatus('Lỗi', 'red');
+      if ($('oauthRcloneCheckOutput')) $('oauthRcloneCheckOutput').textContent = err.message;
+      window.App.utils.toast(`Không chạy được rclone about: ${err.message}`, true);
+    }
+  }
+
+  async function loadSavedCallbackResult(id, action) {
+    try {
+      const record = await window.App.api.request(`/api/configs/${encodeURIComponent(id)}`);
+      await buildServerConfig({ action, record });
+    } catch (err) {
+      window.App.utils.toast(`Không tải được config vừa lưu để check rclone: ${err.message}`, true);
+    }
   }
 
   async function saveManualConfig() {
@@ -420,6 +496,9 @@
     lastManualRecord = null;
     $('saveConfigBtn').textContent = '☁️ Save to Firebase';
     $('saveConfigBtn').disabled = false;
+    if ($('oauthRcloneCheckStatus')) setRcloneCheckStatus('Chưa chạy', 'gray');
+    if ($('oauthRcloneCheckOutput')) $('oauthRcloneCheckOutput').textContent = 'Đang chờ config.';
+    if ($('aboutCommand')) $('aboutCommand').textContent = 'rclone about myremote: --json';
     showOauthStep('oauthStepConfig');
     setFlow(1);
     history.replaceState({}, '', location.pathname + location.hash);
@@ -460,6 +539,10 @@
       const action = params.get('action') === 'updated' ? 'cập nhật' : 'lưu';
       $('oauthSavedText').textContent = `Đã ${action} remote ${params.get('remote') || ''}.`;
       $('oauthSavedBanner').classList.remove('hidden');
+      const id = params.get('id') || '';
+      if (id) {
+        loadSavedCallbackResult(id, params.get('action') || 'updated');
+      }
       history.replaceState({}, '', location.pathname + location.hash);
       return;
     }

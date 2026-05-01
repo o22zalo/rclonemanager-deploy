@@ -1,5 +1,13 @@
 (function () {
   const ROUTES = ['oauth-gd', 'oauth-od', 'credentials', 'configs', 'manager', 'rclone', 'settings'];
+  const LOCKED_ROUTES = new Set(ROUTES);
+  const LOCKED_SECTION_SELECTORS = [
+    '#section-credentials',
+    '#section-configs',
+    '#section-manager',
+    '#section-rclone',
+    '#section-settings',
+  ];
 
   function $(id) {
     return document.getElementById(id);
@@ -8,6 +16,28 @@
   function routeFromHash() {
     const raw = window.location.hash.replace('#', '');
     return ROUTES.includes(raw) ? raw : 'oauth-gd';
+  }
+
+  function isLockedRoute(route) {
+    return LOCKED_ROUTES.has(route);
+  }
+
+  function protectedMenuLinks() {
+    return document.querySelectorAll('.sidebar__link[data-route], .bottom-nav__item[data-route]');
+  }
+
+  function setDisabledLabel(link, locked) {
+    let label = link.querySelector('.nav-disabled-label');
+    if (!locked) {
+      label?.remove();
+      return;
+    }
+    if (!label) {
+      label = document.createElement('span');
+      label.className = 'nav-disabled-label';
+      label.textContent = 'disabled';
+      link.appendChild(label);
+    }
   }
 
   let authLocked = false;
@@ -128,15 +158,34 @@
       if (event.key !== "Escape") return;
       document.querySelectorAll(".modal.modal--open").forEach((m)=>m.classList.remove("modal--open"));
     });
+    document.addEventListener('click', (event) => {
+      const link = event.target.closest('.sidebar__link[data-route], .bottom-nav__item[data-route]');
+      if (!link || !authLocked || !isLockedRoute(link.dataset.route)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      window.App.utils.toast('Vui lòng đăng nhập Google trước khi sử dụng menu này.', true);
+    });
   }
 
 
   function setAppLocked(locked) {
     document.body.classList.toggle('auth-locked', locked);
-    const selectors = ['#section-credentials', '#section-configs', '#section-manager', '#section-rclone', '#section-settings', '[data-route=credentials]', '[data-route=configs]', '[data-route=manager]', '[data-route=rclone]', '[data-route=settings]'];
-    document.querySelectorAll(selectors.join(',')).forEach((el)=>{
+    document.querySelectorAll(LOCKED_SECTION_SELECTORS.join(',')).forEach((el)=>{
       if (locked) el.setAttribute('aria-disabled','true');
       else el.removeAttribute('aria-disabled');
+    });
+    protectedMenuLinks().forEach((link) => {
+      const shouldLock = locked && isLockedRoute(link.dataset.route);
+      link.classList.toggle('nav-link--disabled', shouldLock);
+      setDisabledLabel(link, shouldLock);
+      if (!link.dataset.tooltipBase && link.dataset.tooltip) link.dataset.tooltipBase = link.dataset.tooltip;
+      if (shouldLock) {
+        link.setAttribute('aria-disabled', 'true');
+        if (link.dataset.tooltipBase) link.dataset.tooltip = `${link.dataset.tooltipBase} disabled`;
+      } else {
+        link.removeAttribute('aria-disabled');
+        if (link.dataset.tooltipBase) link.dataset.tooltip = link.dataset.tooltipBase;
+      }
     });
   }
 
@@ -257,7 +306,7 @@
   function registerServiceWorker() {
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js?v=20260501-5').catch(() => {});
+        navigator.serviceWorker.register('/sw.js?v=20260501-6').catch(() => {});
       });
     }
   }

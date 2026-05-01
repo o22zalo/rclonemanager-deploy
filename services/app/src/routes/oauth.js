@@ -105,6 +105,7 @@ async function handleOAuthCallback(req, res) {
 
     res.redirect(frontendRedirect(req, {
       saved: 'true',
+      id: saved.record.id,
       remote: saved.record.remoteName,
       action: saved.action,
     }));
