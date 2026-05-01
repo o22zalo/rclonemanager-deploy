@@ -6,8 +6,9 @@
 // ================================================================
 'use strict';
 
-const { execSync } = require('child_process');
-const fs           = require('fs');
+const { execFileSync } = require('child_process');
+const fs = require('fs');
+const path = require('path');
 
 const FILES = [
   'docker-compose/compose.core.yml',
@@ -31,12 +32,19 @@ for (const f of FILES) {
 if (abort) process.exit(1);
 
 const fileArgs = FILES.map(f => `-f ${f}`).join(' ');
-const cmd = `bash docker-compose/scripts/dc.sh config --quiet 2>&1`;
+const args = [
+  'compose',
+  ...FILES.flatMap((f) => ['-f', f]),
+  '--project-directory',
+  process.cwd(),
+  'config',
+  '--quiet',
+];
 
 console.log(`\n    Running: docker compose ${fileArgs} config ...\n`);
 
 try {
-  execSync(cmd, { stdio: 'inherit' });
+  execFileSync('docker', args, { stdio: 'inherit', cwd: path.resolve(__dirname, '../..') });
   console.log('\n✅  Compose configuration is valid!\n');
 } catch {
   console.log('\n❌  Compose validation failed — fix YAML errors above.\n');

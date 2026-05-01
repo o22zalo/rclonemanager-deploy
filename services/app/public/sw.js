@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rclone-oauth-manager-v8';
+const CACHE_NAME = 'rclone-oauth-manager-v9';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -20,7 +20,7 @@ const STATIC_ASSETS = [
   '/js/configs.js?v=20260430-6',
   '/js/manager.js?v=20260430-6',
   '/js/rcloneCommands.js?v=20260501-1',
-  '/js/main.js?v=20260501-1',
+  '/js/main.js?v=20260501-2',
   '/favicon.ico',
   '/icons/icon-192.png',
   '/icons/icon-512.png',

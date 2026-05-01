@@ -10,6 +10,8 @@ if (!fs.existsSync(envPath)) {
   process.exit(1);
 }
 
+const envMeta = {};
+
 function parseEnvFile(filePath) {
   const out = {};
   const raw = fs.readFileSync(filePath, "utf8");
@@ -18,8 +20,13 @@ function parseEnvFile(filePath) {
     if (!s || s.startsWith("#") || !s.includes("=")) continue;
     const idx = s.indexOf("=");
     const key = s.slice(0, idx).trim();
-    let value = s.slice(idx + 1).trim();
+    const rawValue = s.slice(idx + 1).trim();
+    const quote = (rawValue.startsWith("'") && rawValue.endsWith("'"))
+      ? "'"
+      : ((rawValue.startsWith('"') && rawValue.endsWith('"')) ? '"' : "");
+    let value = rawValue;
     value = value.replace(/^['"]|['"]$/g, "");
+    envMeta[key] = { rawValue, quote };
     out[key] = value;
   }
   return out;
@@ -167,8 +174,13 @@ checkRequired("DOMAIN", "root domain", isValidDomain);
 checkRequired("CADDY_EMAIL", "caddy email label", (v) => (v.includes("@") ? null : "invalid email"));
 checkRequired("CADDY_AUTH_USER", "basic auth username");
 checkRequired("CADDY_AUTH_HASH", "basic auth bcrypt hash", (v) => {
-  const raw = v.replace(/\$\$/g, "$");
-  return raw.startsWith("$2a$") || raw.startsWith("$2b$") ? null : "must be bcrypt hash ($2a$/$2b$...)";
+  if (v.includes("$$")) {
+    return "must not escape dollars as $$; use single quotes around the bcrypt hash";
+  }
+  if (envMeta.CADDY_AUTH_HASH?.quote !== "'") {
+    return "wrap the bcrypt hash in single quotes, e.g. CADDY_AUTH_HASH='$2a$14$...'";
+  }
+  return /^\$2[aby]\$\d{2}\$/.test(v) ? null : "must be bcrypt hash ($2a$/$2b$/$2y$...)";
 });
 checkPort("APP_PORT", true);
 

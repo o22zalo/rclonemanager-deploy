@@ -46,6 +46,20 @@
       </ul>
     </nav>
     <div class="sidebar__footer">
+      <div class="sidebar-auth hidden" id="googleLoginPanel" aria-live="polite">
+        <div class="sidebar-auth__header">
+          <span class="sidebar-auth__title">Đăng nhập Google</span>
+          <span class="sidebar-auth__state sidebar-auth__state--out" id="googleLoginState">Chưa đăng nhập</span>
+        </div>
+        <div class="sidebar-auth__status" id="googleLoginStatus">Vui lòng đăng nhập bằng Gmail được cấp quyền.</div>
+        <div class="sidebar-auth__actions" id="googleLoginButton"></div>
+        <div class="sidebar-auth__api">
+          <label class="label" for="googlePanelApiKey">Backend API key</label>
+          <input class="input" id="googlePanelApiKey" placeholder="x-api-key" />
+        </div>
+        <button type="button" class="btn btn--secondary btn--sm" id="saveApiKeyLoginBtn">Lưu API key local</button>
+        <button type="button" class="btn btn--secondary btn--sm hidden" id="googleLogoutBtn">Đăng xuất</button>
+      </div>
       <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle dark/light mode">
         <span class="theme-toggle__icon--light" aria-hidden="true">☀️</span>
         <span class="theme-toggle__icon--dark" aria-hidden="true">🌙</span>
@@ -62,19 +76,6 @@
   <main class="main-content" id="mainContent">
     <div class="page-wrapper">
       <section id="section-oauth" class="section section--active" aria-labelledby="oauthTitle">
-        <div class="panel hidden" id="googleLoginPanel">
-          <div class="panel__header"><h2 class="h4">Đăng nhập Google</h2></div>
-          <div class="panel__body stack">
-            <div id="googleLoginButton"></div>
-            <div class="text-secondary" id="googleLoginStatus">Vui lòng đăng nhập bằng Gmail được cấp quyền.</div>
-            <div class="form-field">
-              <label class="label" for="googlePanelApiKey">Backend API key</label>
-              <input class="input" id="googlePanelApiKey" placeholder="x-api-key" />
-            </div>
-            <button type="button" class="btn btn--secondary btn--sm" id="saveApiKeyLoginBtn">Lưu API key local</button>
-            <button type="button" class="btn btn--secondary btn--sm" id="googleLogoutBtn">Đăng xuất</button>
-          </div>
-        </div>
         <div class="page-header">
           <div class="page-header__copy">
             <div class="page-header__meta">
@@ -663,6 +664,6 @@
   <script src="/js/configs.js?v=20260430-6" defer></script>
   <script src="/js/manager.js?v=20260430-6" defer></script>
   <script src="/js/rcloneCommands.js?v=20260501-1" defer></script>
-  <script src="/js/main.js?v=20260501-1" defer></script>
+  <script src="/js/main.js?v=20260501-2" defer></script>
 </body>
 </html>

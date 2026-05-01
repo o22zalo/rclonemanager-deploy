@@ -24,3 +24,5 @@
 ## Lưu ý
 - Public traffic hiện đi qua Cloudflare Tunnel nên upstream từ cloudflared vào Caddy bằng HTTP nội bộ.
 - Basic auth cho từng virtual host được khai báo ở labels của từng service (`CADDY_AUTH_USER`, `CADDY_AUTH_HASH`).
+- Label `caddy.basic_auth=` cố ý không truyền matcher để bảo vệ toàn bộ virtual host.
+- `CADDY_AUTH_HASH` phải là bcrypt hash thật và đặt trong dấu nháy đơn trong `.env`, ví dụ `CADDY_AUTH_HASH='$2a$14$...'`. Không dùng dạng `$$2a$$...`; nếu cần literal `$`, bọc toàn bộ hash bằng nháy đơn.
