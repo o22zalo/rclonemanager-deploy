@@ -14,7 +14,7 @@
   }
 
   function routeFromHash() {
-    const raw = window.location.hash.replace('#', '');
+    const raw = window.location.hash.replace('#', '').split('?')[0];
     return ROUTES.includes(raw) ? raw : 'oauth-gd';
   }
 
@@ -335,7 +335,7 @@
   function registerServiceWorker() {
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js?v=20260501-11').catch(() => {});
+        navigator.serviceWorker.register('/sw.js?v=20260501-12').catch(() => {});
       });
     }
   }

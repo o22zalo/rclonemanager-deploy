@@ -118,6 +118,120 @@
     return `${baseUrl}?${search}`;
   }
 
+  function currentUrlParams() {
+    const params = new URLSearchParams(window.location.search);
+    const hash = window.location.hash.replace(/^#/, '');
+    const queryIndex = hash.indexOf('?');
+    if (queryIndex >= 0) {
+      new URLSearchParams(hash.slice(queryIndex + 1)).forEach((value, key) => {
+        params.set(key, value);
+      });
+    }
+    return params;
+  }
+
+  function firstParam(params, names) {
+    for (const name of names) {
+      const value = params.get(name);
+      if (value !== null && String(value).trim() !== '') return String(value).trim();
+    }
+    return '';
+  }
+
+  function hasOauthFormParams(params) {
+    return [
+      'type', 'mode', 'flow',
+      'label-preset', 'preset-label', 'labelPreset', 'preset', 'preset-id', 'presetId',
+      'email-owner', 'emailOwner', 'email_owner', 'email', 'login_hint',
+      'remote', 'remote-name', 'remoteName',
+      'scope', 'drive-type', 'driveType',
+      'root-folder', 'rootFolder', 'googleRootFolderMode',
+      'redirect-uri', 'redirectUri',
+      'client-id', 'clientId',
+      'client-secret', 'clientSecret',
+    ].some((name) => params.has(name));
+  }
+
+  function normalizeModeParam(value) {
+    const modeName = String(value || '').trim().toLowerCase();
+    if (['direct', 'auto', 'direct-auth'].includes(modeName)) return 'auto';
+    if (['paste', 'parse', 'manual', 'url', 'parse-url'].includes(modeName)) return 'paste';
+    return '';
+  }
+
+  function normalizeLookup(value) {
+    return String(value || '').trim().toLowerCase();
+  }
+
+  function selectPresetFromParams(params, preserveMode) {
+    const select = $('oauthPreset');
+    if (!select) return false;
+    const presetId = firstParam(params, ['preset-id', 'presetId', 'preset']);
+    const presetLabel = firstParam(params, ['label-preset', 'preset-label', 'labelPreset']);
+    if (!presetId && !presetLabel) return false;
+
+    const options = allPresetOptions();
+    const idNeedle = normalizeLookup(presetId);
+    const labelNeedle = normalizeLookup(presetLabel);
+    let index = -1;
+
+    if (idNeedle) {
+      index = options.findIndex((preset) => normalizeLookup(preset.id) === idNeedle);
+    }
+    if (index < 0 && labelNeedle) {
+      index = options.findIndex((preset) => normalizeLookup(preset.label) === labelNeedle);
+    }
+    if (index < 0 && labelNeedle) {
+      index = options.findIndex((preset) => normalizeLookup(preset.label).includes(labelNeedle));
+    }
+    if (index < 0) return false;
+
+    select.value = String(index);
+    applySelectedPreset({ preserveMode });
+    return true;
+  }
+
+  function applyUrlParams() {
+    const params = currentUrlParams();
+    if (!hasOauthFormParams(params)) return false;
+
+    const modeFromParam = normalizeModeParam(firstParam(params, ['type', 'mode', 'flow']));
+    const preserveMode = Boolean(modeFromParam);
+    const selectedByParam = selectPresetFromParams(params, preserveMode);
+
+    const emailOwner = firstParam(params, ['email-owner', 'emailOwner', 'email_owner', 'email', 'login_hint']);
+    if (emailOwner && $('emailOwner')) $('emailOwner').value = emailOwner;
+
+    const remoteName = firstParam(params, ['remote', 'remote-name', 'remoteName']);
+    if (remoteName && $('remoteName')) $('remoteName').value = remoteName;
+
+    const scope = firstParam(params, ['scope']);
+    if (scope && $('scope')) $('scope').value = scope;
+
+    const driveType = firstParam(params, ['drive-type', 'driveType']);
+    if (driveType && $('driveType')) $('driveType').value = driveType;
+
+    const rootFolder = firstParam(params, ['root-folder', 'rootFolder', 'googleRootFolderMode']);
+    if (rootFolder && $('googleRootFolderMode')) $('googleRootFolderMode').value = rootFolder;
+
+    const redirectUri = firstParam(params, ['redirect-uri', 'redirectUri']);
+    if (redirectUri && $('customRedirectUri')) $('customRedirectUri').value = redirectUri;
+
+    const clientId = firstParam(params, ['client-id', 'clientId']);
+    if (clientId && $('clientId')) $('clientId').value = clientId;
+
+    const clientSecret = firstParam(params, ['client-secret', 'clientSecret']);
+    if (clientSecret && $('clientSecret')) {
+      $('clientSecret').value = clientSecret;
+      $('clientSecret').disabled = false;
+    }
+
+    if (!selectedByParam && (clientId || clientSecret)) updateSecretRequired();
+    if (modeFromParam) selectMode(modeFromParam);
+    updateSecretRequired();
+    return true;
+  }
+
   function buildAuthUrl(cfg, emailOwner) {
     cfg = sanitizeConfig(cfg);
     const state = buildStateParam(cfg, emailOwner);
@@ -151,6 +265,24 @@
     }, emailOwner);
   }
 
+  function buildProviderLoginUrl(emailOwner) {
+    const loginHint = String(emailOwner || '').trim();
+    if (provider === 'gd') {
+      const params = new URLSearchParams({
+        continue: 'https://myaccount.google.com/',
+      });
+      if (loginHint) {
+        params.set('Email', loginHint);
+        params.set('login_hint', loginHint);
+      }
+      return `https://accounts.google.com/AccountChooser?${params}`;
+    }
+
+    const params = new URLSearchParams({ auth: '2' });
+    if (loginHint) params.set('login_hint', loginHint);
+    return `https://www.office.com/?${params}`;
+  }
+
   function renderGuides() {
     const key = `${provider}-${mode}`;
     const guideMap = {
@@ -175,6 +307,10 @@
     if ($('oauthSubtitle')) $('oauthSubtitle').textContent = `Chọn direct auth hoặc parse URL redirect để lưu config ${label}.`;
     if ($('credentialsPanelTitle')) $('credentialsPanelTitle').textContent = `${label} credentials`;
     if ($('oauthPresetLabel')) $('oauthPresetLabel').textContent = `${label} preset`;
+    if ($('providerLoginBtn')) {
+      $('providerLoginBtn').textContent = `Login ${provider === 'gd' ? 'Google' : 'Microsoft'}`;
+      $('providerLoginBtn').title = `Mở trang đăng nhập ${label} với login_hint`;
+    }
   }
 
   function updateRedirectText() {
@@ -235,10 +371,11 @@
       const data = await window.App.api.request('/api/oauth/presets');
       window.App.state.presets = data.items || [];
       renderPresetOptions();
-      applySelectedPreset();
+      if (!applyUrlParams()) applySelectedPreset();
     } catch (err) {
       window.App.utils.toast(`Không tải được OAuth presets: ${err.message}`, true);
       renderPresetOptions();
+      applyUrlParams();
     }
   }
 
@@ -256,7 +393,7 @@
     if (!reset && previous && Number(previous) < select.options.length) select.value = previous;
   }
 
-  function applySelectedPreset() {
+  function applySelectedPreset(options = {}) {
     const preset = selectedPreset();
     if (!preset) return;
     const storedPreset = usesStoredPreset(preset);
@@ -266,7 +403,7 @@
     if (storedPreset) $('clientSecret').placeholder = 'Dùng client secret đã lưu trên backend';
     if (preset.custom) { $('clientId').value=''; $('clientSecret').value=''; $('clientSecret').disabled = false; }
     if (preset.redirectUri) $('customRedirectUri').value = preset.redirectUri;
-    if (preset.builtin) selectMode('paste');
+    if (preset.builtin && !options.preserveMode) selectMode('paste');
     updateSecretRequired();
   }
 
@@ -316,6 +453,15 @@
       return 'Client Secret đang giống Azure Secret ID. Hãy copy cột Value trong Azure Certificates & secrets, không copy Secret ID.';
     }
     return '';
+  }
+
+  function openProviderLogin() {
+    const emailOwner = $('emailOwner')?.value.trim() || '';
+    if (!emailOwner) {
+      window.App.utils.toast('Nhập email owner trước khi mở trang login.', true);
+      return;
+    }
+    window.open(buildProviderLoginUrl(emailOwner), '_blank', 'noopener');
   }
 
   function showOauthStep(step) {
@@ -555,6 +701,7 @@
       renderPresetOptions();
     });
     $('copyRedirectBtn')?.addEventListener('click', () => window.App.utils.copyText(backendRedirectUri(), 'Đã copy redirect URI.'));
+    $('providerLoginBtn')?.addEventListener('click', openProviderLogin);
     $('oauthPrimaryBtn')?.addEventListener('click', step1Action);
     $('copyAuthAutoBtn')?.addEventListener('click', () => window.App.utils.copyText(authUrl, 'Đã copy auth URL.'));
     $('copyAuthPasteBtn')?.addEventListener('click', () => window.App.utils.copyText(authUrl, 'Đã copy auth URL.'));
@@ -615,6 +762,7 @@
     bindEvents();
     updateModeUI();
     updateProviderUI();
+    applyUrlParams();
     loadOAuthPresets();
     handleCallbackParams();
     setBackendBanner();
@@ -623,9 +771,14 @@
   window.App = window.App || {};
   window.App.OAuth = {
     init,
-    setProviderFromRoute(next) { setProvider(next); },
+    setProviderFromRoute(next) {
+      setProvider(next);
+      applyUrlParams();
+    },
     renderPresetOptions,
     setBackendBanner,
     buildAuthUrl,
+    buildProviderLoginUrl,
+    applyUrlParams,
   };
 })();
