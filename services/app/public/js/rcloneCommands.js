@@ -4,6 +4,7 @@
     lsjson: { outputMode: 'json', requiresTarget: false },
     size_json: { outputMode: 'json', requiresTarget: false },
     about_json: { outputMode: 'json', requiresTarget: false },
+    full_flow: { outputMode: 'json', requiresTarget: false, fullFlow: true },
     tree: { outputMode: 'raw', requiresTarget: false },
     copy: { outputMode: 'raw', requiresTarget: true, supportsDryRun: true },
     sync: { outputMode: 'raw', requiresTarget: true, supportsDryRun: true },
@@ -47,6 +48,19 @@
   function oneDrivePersonalVaultFilter(source) {
     if (source?.provider !== 'od' || !$('rcloneExcludePersonalVault')?.checked) return '';
     return ' --exclude "/Personal Vault/**"';
+  }
+
+  function fullFlowPlan(source) {
+    const folder = 'rclone-kiem-thu';
+    const remote = source?.remoteName || 'source';
+    return [
+      `rclone mkdir ${remote}:${folder}`,
+      `rclone copyto <temp YYYYMMDD-HHmmss.txt> ${remote}:${folder}/YYYYMMDD-HHmmss.txt`,
+      `rclone lsjson ${remote}:${folder}/YYYYMMDD-HHmmss.txt --stat`,
+      `rclone size ${remote}:${folder}/YYYYMMDD-HHmmss.txt --json`,
+      `rclone deletefile ${remote}:${folder}/YYYYMMDD-HHmmss.txt`,
+      `rclone rmdir ${remote}:${folder}`,
+    ].join('\n');
   }
 
   function selectedConfigIds() {
@@ -145,6 +159,7 @@
     if (presetKey === 'lsjson') command = `rclone lsjson ${remoteRef(source, sourcePath)}`;
     if (presetKey === 'size_json') command = `rclone size ${remoteRef(source, sourcePath)} --json`;
     if (presetKey === 'about_json') command = `rclone about ${remoteRef(source, '')} --json`;
+    if (presetKey === 'full_flow') command = fullFlowPlan(source);
     if (presetKey === 'tree') command = `rclone tree ${remoteRef(source, sourcePath)}`;
     if (presetKey === 'check') command = `rclone check ${remoteRef(source, sourcePath)} ${remoteRef(target, targetPath)} --one-way`;
     if (['copy', 'sync', 'move'].includes(presetKey)) {
@@ -152,7 +167,7 @@
       if (dryRun) command += ' --dry-run';
     }
 
-    if (command) command += oneDrivePersonalVaultFilter(source);
+    if (command && !preset.fullFlow) command += oneDrivePersonalVaultFilter(source);
     $('rcloneCommandInput').value = command || '';
     $('rcloneOutputMode').value = preset.outputMode;
     return command;
@@ -183,7 +198,91 @@
     meta.textContent = `exit ${result.exitCode ?? '-'} · ${elapsedMs}ms${result.timedOut ? ' · timed out' : ''}`;
   }
 
+  function stepOutput(step) {
+    const output = step.json
+      ? JSON.stringify(step.json, null, 2)
+      : (step.stdout || '');
+    const details = [];
+    if (output) details.push(`stdout:\n${output}`);
+    if (step.stderr) details.push(`stderr:\n${step.stderr}`);
+    if (step.error) details.push(`error:\n${step.error}`);
+    if (step.jsonParseError) details.push(`json parse error:\n${step.jsonParseError}`);
+    return details.join('\n');
+  }
+
+  function renderFullFlowResult(result, elapsedMs) {
+    const stdout = $('rcloneStdout');
+    const stderr = $('rcloneStderr');
+    const meta = $('rcloneResultMeta');
+    if (!stdout || !stderr || !meta) return;
+
+    const lines = [
+      `Full flow: ${result.ok ? 'OK' : 'ERROR'}`,
+      `Remote: ${result.remoteName || '-'}`,
+      `Folder: ${result.folder || '-'}`,
+      `File: ${result.fileName || '-'}`,
+      '',
+      ...(result.steps || []).map((step, index) => [
+        `${index + 1}. [${step.status === 'ok' ? 'OK' : 'ERROR'}] ${step.label}`,
+        `   ${step.command}`,
+        `   exit ${step.exitCode ?? '-'} · ${step.elapsedMs ?? 0}ms${step.timedOut ? ' · timed out' : ''}`,
+        stepOutput(step).split('\n').map((line) => `   ${line}`).join('\n'),
+      ].filter(Boolean).join('\n')),
+    ];
+
+    stdout.textContent = lines.join('\n');
+    stderr.textContent = (result.steps || [])
+      .filter((step) => step.status !== 'ok' || step.stderr)
+      .map((step) => `[${step.status}] ${step.label}\n${step.stderr || step.error || step.jsonParseError || ''}`.trim())
+      .join('\n\n') || '(empty)';
+    meta.textContent = `${result.ok ? 'full flow ok' : 'full flow error'} · ${elapsedMs}ms`;
+  }
+
+  async function runFullTest() {
+    const source = selectedConfig('rcloneSourceConfigSelect');
+    if (!source) {
+      window.App.utils.toast('Chọn source config trước.', true);
+      return;
+    }
+    const timeoutSeconds = Math.min(Math.max(Number($('rcloneTimeoutSeconds')?.value || 900), 1), 900);
+    const runButtons = [$('rcloneRunBtn'), $('rcloneRunInlineBtn'), $('rcloneFullTestBtn')].filter(Boolean);
+    const start = Date.now();
+
+    $('rclonePreset').value = 'full_flow';
+    $('rcloneOutputMode').value = 'json';
+    $('rcloneCommandInput').value = fullFlowPlan(source);
+    runButtons.forEach((button) => {
+      button.disabled = true;
+    });
+    $('rcloneRunStatus').textContent = 'Running full test...';
+
+    try {
+      const result = await window.App.api.request('/api/rclone/full-test', {
+        method: 'POST',
+        body: JSON.stringify({
+          configIds: [source.id],
+          timeoutMs: timeoutSeconds * 1000,
+        }),
+        allowStatuses: [422],
+      });
+      renderFullFlowResult(result, Date.now() - start);
+      $('rcloneRunStatus').textContent = result.ok ? 'Full test done' : 'Full test finished with error';
+      if (!result.ok) window.App.utils.toast('Full flow test có bước lỗi. Xem kết quả từng bước.', true);
+    } catch (err) {
+      $('rcloneRunStatus').textContent = 'Failed';
+      window.App.utils.toast(`Không chạy được full test: ${err.message}`, true);
+    } finally {
+      runButtons.forEach((button) => {
+        button.disabled = false;
+      });
+    }
+  }
+
   async function runCommand() {
+    if ($('rclonePreset')?.value === 'full_flow') {
+      await runFullTest();
+      return;
+    }
     const command = $('rcloneCommandInput')?.value.trim();
     if (!command) {
       window.App.utils.toast('Nhập hoặc build command trước.', true);
@@ -279,6 +378,10 @@
     const preset = PRESETS[$('rclonePreset')?.value] || PRESETS.lsd;
     $('rcloneDryRun').disabled = !preset.supportsDryRun;
     if (preset.outputMode) $('rcloneOutputMode').value = preset.outputMode;
+    if (preset.fullFlow) {
+      const source = selectedConfig('rcloneSourceConfigSelect');
+      $('rcloneCommandInput').value = fullFlowPlan(source);
+    }
   }
 
   function bindEvents() {
@@ -286,6 +389,7 @@
     $('rcloneCopyCommandBtn')?.addEventListener('click', () => window.App.utils.copyText($('rcloneCommandInput')?.value || '', 'Đã copy command.'));
     $('rcloneRunBtn')?.addEventListener('click', runCommand);
     $('rcloneRunInlineBtn')?.addEventListener('click', runCommand);
+    $('rcloneFullTestBtn')?.addEventListener('click', runFullTest);
     $('rcloneReloadBtn')?.addEventListener('click', async () => {
       await refreshOptions();
       await loadSavedCommands();
@@ -295,6 +399,7 @@
     $('rcloneDeleteSavedBtn')?.addEventListener('click', deleteSelectedSavedCommand);
     $('rcloneSavedCommandSelect')?.addEventListener('change', loadSelectedSavedCommand);
     $('rclonePreset')?.addEventListener('change', updatePresetState);
+    $('rcloneSourceConfigSelect')?.addEventListener('change', updatePresetState);
   }
 
   function init() {

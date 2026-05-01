@@ -1,4 +1,7 @@
 const express = require('express');
+const fs = require('fs/promises');
+const os = require('os');
+const path = require('path');
 const firebase = require('../services/firebase');
 const { COLLECTION } = require('../services/configStore');
 const { fetchOneDriveDrive } = require('../services/cloudApi');
@@ -8,6 +11,7 @@ const { injectOneDriveDriveId } = require('../utils/configBuilder');
 
 const router = express.Router();
 const COMMANDS_COLLECTION = 'rclone_commands';
+const FULL_TEST_FOLDER = 'rclone-kiem-thu';
 
 function normalizeIdList(value) {
   const list = Array.isArray(value) ? value : [];
@@ -115,6 +119,177 @@ async function buildConfigText(configIds) {
   }).filter(Boolean).join('\n\n');
 }
 
+function pad2(value) {
+  return String(value).padStart(2, '0');
+}
+
+function timestampForFilename(date = new Date()) {
+  return [
+    date.getFullYear(),
+    pad2(date.getMonth() + 1),
+    pad2(date.getDate()),
+    '-',
+    pad2(date.getHours()),
+    pad2(date.getMinutes()),
+    pad2(date.getSeconds()),
+  ].join('');
+}
+
+function formatLocalDateTime(date = new Date()) {
+  return [
+    `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`,
+    `${pad2(date.getHours())}:${pad2(date.getMinutes())}:${pad2(date.getSeconds())}`,
+  ].join(' ');
+}
+
+async function getReadyRecord(id) {
+  const record = await firebase.get(`${COLLECTION}/${id}`);
+  if (!record) {
+    const err = new Error(`Config not found: ${id}`);
+    err.status = 404;
+    throw err;
+  }
+  return ensureOneDriveDriveId(id, record);
+}
+
+function configTextForRecord(record) {
+  const driveId = record.driveId || record.drive_id || '';
+  if (record.provider === 'od' && driveId) {
+    return injectOneDriveDriveId(record.rcloneConfig || '', driveId, record.driveType);
+  }
+  return record.rcloneConfig || '';
+}
+
+function remotePath(record, subPath = '') {
+  const clean = String(subPath || '').replace(/^\/+/, '');
+  return `${record.remoteName}:${clean}`;
+}
+
+function commandText(command) {
+  const args = Array.isArray(command) ? command : [command];
+  return `rclone ${args.map((arg) => {
+    const text = String(arg || '');
+    return /[\s"']/.test(text) ? `"${text.replaceAll('\\', '\\\\').replaceAll('"', '\\"')}"` : text;
+  }).join(' ')}`;
+}
+
+async function runFullTestStep({ key, label, command, configText, outputMode, timeoutMs }) {
+  const startedAt = Date.now();
+  try {
+    const result = await runRclone({
+      command,
+      configText,
+      outputMode: outputMode || 'raw',
+      timeoutMs,
+    });
+    const ok = result.exitCode === 0 && !result.timedOut && !result.jsonParseError;
+    return {
+      key,
+      label,
+      status: ok ? 'ok' : 'error',
+      elapsedMs: Date.now() - startedAt,
+      ...result,
+    };
+  } catch (err) {
+    return {
+      key,
+      label,
+      command: commandText(command),
+      args: Array.isArray(command) ? command.map((item) => String(item)) : [],
+      status: 'error',
+      elapsedMs: Date.now() - startedAt,
+      exitCode: null,
+      timedOut: false,
+      stdout: '',
+      stderr: err.message,
+      error: err.message,
+    };
+  }
+}
+
+async function writeFullTestLocalFile(content) {
+  const filePath = path.join(
+    os.tmpdir(),
+    `rclone-kiem-thu-${Date.now()}-${Math.random().toString(36).slice(2)}.txt`,
+  );
+  await fs.writeFile(filePath, content, 'utf8');
+  return filePath;
+}
+
+async function runFullFlowTest({ configId, timeoutMs }) {
+  const record = await getReadyRecord(configId);
+  const configText = configTextForRecord(record);
+  const now = new Date();
+  const fileName = `${timestampForFilename(now)}.txt`;
+  const remoteFolder = remotePath(record, FULL_TEST_FOLDER);
+  const remoteFile = remotePath(record, `${FULL_TEST_FOLDER}/${fileName}`);
+  const content = [
+    'rclone kiem thu full flow',
+    `remote=${record.remoteName}`,
+    `time_local=${formatLocalDateTime(now)}`,
+    `time_iso=${now.toISOString()}`,
+    '',
+  ].join('\n');
+  const localFile = await writeFullTestLocalFile(content);
+
+  const steps = [
+    {
+      key: 'mkdir',
+      label: 'Tạo folder rclone-kiem-thu',
+      command: ['mkdir', remoteFolder],
+    },
+    {
+      key: 'upload',
+      label: `Tạo file ${fileName}`,
+      command: ['copyto', localFile, remoteFile],
+    },
+    {
+      key: 'ls',
+      label: 'Ls file vừa tạo',
+      command: ['lsjson', remoteFile, '--stat'],
+      outputMode: 'json',
+    },
+    {
+      key: 'size',
+      label: 'Xem dung lượng file',
+      command: ['size', remoteFile, '--json'],
+      outputMode: 'json',
+    },
+    {
+      key: 'delete-file',
+      label: 'Xóa file vừa tạo',
+      command: ['deletefile', remoteFile],
+    },
+    {
+      key: 'delete-folder',
+      label: 'Xóa folder rclone-kiem-thu',
+      command: ['rmdir', remoteFolder],
+    },
+  ];
+
+  try {
+    const results = [];
+    for (const step of steps) {
+      results.push(await runFullTestStep({
+        ...step,
+        configText,
+        timeoutMs,
+      }));
+    }
+    return {
+      ok: results.every((step) => step.status === 'ok'),
+      remoteName: record.remoteName,
+      folder: FULL_TEST_FOLDER,
+      fileName,
+      remoteFile,
+      content,
+      steps: results,
+    };
+  } finally {
+    await fs.unlink(localFile).catch(() => {});
+  }
+}
+
 function normalizeSavedCommand(body, existing = {}) {
   const now = Date.now();
   return {
@@ -144,6 +319,28 @@ router.post('/run', async (req, res, next) => {
       timeoutMs: req.body?.timeoutMs,
     });
     res.status(result.exitCode === 0 && !result.timedOut ? 200 : 422).json(result);
+  } catch (err) {
+    if (err.code === 'ENOENT') {
+      err.message = 'rclone executable was not found in PATH.';
+      err.status = 500;
+    }
+    next(err);
+  }
+});
+
+router.post('/full-test', async (req, res, next) => {
+  try {
+    const ids = normalizeIdList(req.body?.configIds || (req.body?.configId ? [req.body.configId] : []));
+    if (ids.length === 0) {
+      res.status(400).json({ error: 'configId is required.' });
+      return;
+    }
+
+    const result = await runFullFlowTest({
+      configId: ids[0],
+      timeoutMs: req.body?.timeoutMs,
+    });
+    res.status(result.ok ? 200 : 422).json(result);
   } catch (err) {
     if (err.code === 'ENOENT') {
       err.message = 'rclone executable was not found in PATH.';
