@@ -25,6 +25,7 @@
   async function request(path, options = {}) {
     const { allowStatuses = [], headers = {}, ...fetchOptions } = options;
     const response = await fetch(`${backendBase}${path}`, {
+      credentials: window.location.protocol === 'file:' ? 'omit' : 'same-origin',
       ...fetchOptions,
       headers: {
         'Content-Type': 'application/json',
@@ -49,7 +50,11 @@
     const controller = new AbortController();
     const timer = window.setTimeout(() => controller.abort(), timeoutMs);
     try {
-      const response = await fetch(`${backendBase}/health`, { signal: controller.signal });
+      const response = await fetch(`${backendBase}/health`, {
+        credentials: window.location.protocol === 'file:' ? 'omit' : 'same-origin',
+        cache: 'no-store',
+        signal: controller.signal,
+      });
       const data = await response.json();
       window.App.state.backend = {
         online: response.ok,

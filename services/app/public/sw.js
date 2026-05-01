@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rclone-oauth-manager-v9';
+const CACHE_NAME = 'rclone-oauth-manager-v10';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -11,7 +11,7 @@ const STATIC_ASSETS = [
   '/css/typography.css',
   '/css/animations.css',
   '/css/responsive.css',
-  '/js/api.js?v=20260501-1',
+  '/js/api.js?v=20260501-2',
   '/js/theme.js?v=20260430-6',
   '/js/sidebar.js?v=20260430-6',
   '/js/firebase-client.js?v=20260501-1',
