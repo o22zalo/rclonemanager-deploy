@@ -754,6 +754,11 @@
   font-weight: var(--font-weight-bold);
 }
 
+.metric__value--mono {
+  font-family: var(--font-family-mono);
+  overflow-wrap: anywhere;
+}
+
 .modal {
   position: fixed;
   inset: 0;

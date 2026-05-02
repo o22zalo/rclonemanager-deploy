@@ -76,6 +76,15 @@
     return decodeURIComponent(escape(atob(value)));
   }
 
+  function decodeStateEmail(value) {
+    if (!value) return '';
+    try {
+      return fromB64Utf8(value);
+    } catch (_err) {
+      return String(value || '');
+    }
+  }
+
   function buildStateParam(cfg, emailOwner) {
     cfg = sanitizeConfig(cfg);
     const payload = {
@@ -95,8 +104,53 @@
 
   function decodeStateParam(state) {
     const payload = JSON.parse(fromB64Utf8(state));
-    payload.emailOwner = fromB64Utf8(payload.emailOwner || '');
+    payload.emailOwner = decodeStateEmail(payload.emailOwner || payload.email_owner || '');
     return payload;
+  }
+
+  function safeDecodeStateParam(state) {
+    if (!state) return {};
+    try {
+      return decodeStateParam(state);
+    } catch (_err) {
+      return {};
+    }
+  }
+
+  function nonEmptyValues(source) {
+    return Object.fromEntries(Object.entries(source || {}).filter(([_key, value]) => {
+      if (value === undefined || value === null) return false;
+      if (typeof value === 'string') return value.trim() !== '';
+      return true;
+    }));
+  }
+
+  function readSavedConfig() {
+    try {
+      return JSON.parse(sessionStorage.getItem('rcfg') || '{}');
+    } catch (_err) {
+      return {};
+    }
+  }
+
+  function oauthIdentityFrom(source = {}) {
+    return {
+      clientId: String(source.clientId || '').trim(),
+      emailOwner: String(source.emailOwner || source.email_owner || '').trim(),
+    };
+  }
+
+  function setText(id, value) {
+    const el = $(id);
+    if (el) el.textContent = value || '-';
+  }
+
+  function renderOauthIdentity(source = {}) {
+    const identity = oauthIdentityFrom(source);
+    setText('oauthExchangeClientId', identity.clientId);
+    setText('oauthExchangeEmailOwner', identity.emailOwner);
+    setText('oauthResultClientId', identity.clientId);
+    setText('oauthResultEmailOwner', identity.emailOwner);
   }
 
   function remoteNameFromEmail(email) {
@@ -533,9 +587,12 @@
   }
 
   function configFromReturnedState(returnedState) {
-    let cfg = JSON.parse(sessionStorage.getItem('rcfg') || '{}');
-    if (!cfg.clientId && returnedState) cfg = decodeStateParam(returnedState);
-    return cfg;
+    const stateCfg = safeDecodeStateParam(returnedState);
+    const savedCfg = readSavedConfig();
+    return {
+      ...nonEmptyValues(savedCfg),
+      ...nonEmptyValues(stateCfg),
+    };
   }
 
   async function previewAuthCode(rawUrl, code, returnedState) {
@@ -608,6 +665,7 @@
   }
 
   async function exchangeCode(code, cfg) {
+    renderOauthIdentity(cfg);
     showOauthStep('oauthStepExchange');
     setFlow(4);
     try {
@@ -669,6 +727,7 @@
     const record = result.record || {};
     const conf = record.rcloneConfig || '';
     const remoteName = record.remoteName || 'myremote';
+    renderOauthIdentity(record);
     $('configOutput').textContent = conf;
     $('testCommand').textContent = `rclone lsd ${remoteName}:`;
     if ($('aboutCommand')) $('aboutCommand').textContent = `rclone about ${remoteName}: --json`;
@@ -729,6 +788,7 @@
     sessionStorage.removeItem('rcfg');
     sessionStorage.removeItem('rstate');
     lastManualRecord = null;
+    renderOauthIdentity();
     hideAuthCodePreview();
     $('remoteName').value = '';
     $('saveConfigBtn').textContent = '☁️ Save to Firebase';
@@ -811,8 +871,7 @@
       return;
     }
 
-    let cfg = JSON.parse(sessionStorage.getItem('rcfg') || '{}');
-    if (!cfg.clientId && returnedState) cfg = decodeStateParam(returnedState);
+    const cfg = configFromReturnedState(returnedState);
     exchangeCode(code, cfg);
   }
 

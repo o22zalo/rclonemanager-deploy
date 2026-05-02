@@ -6,10 +6,12 @@ function decodeBase64Utf8(value) {
 
 function decodeEmail(value) {
   if (!value) return '';
+  const raw = String(value).trim();
+  if (raw.includes('@')) return raw;
   try {
-    return decodeURIComponent(escape(decodeBase64Utf8(value)));
+    return decodeURIComponent(escape(decodeBase64Utf8(raw)));
   } catch (_err) {
-    return decodeBase64Utf8(value);
+    return decodeBase64Utf8(raw);
   }
 }
 
@@ -29,8 +31,10 @@ function parseStateParam(state) {
     throw err;
   }
 
-  const required = ['clientId', 'emailOwner', 'provider', 'remoteName', 'redirectUri', 'nonce'];
+  const emailOwnerValue = payload.emailOwner || payload.email_owner || '';
+  const required = ['clientId', 'provider', 'remoteName', 'redirectUri', 'nonce'];
   const missing = required.filter((key) => !payload[key]);
+  if (!emailOwnerValue) missing.push('emailOwner');
   if (missing.length > 0) {
     const err = new Error(`OAuth state is missing: ${missing.join(', ')}`);
     err.status = 400;
@@ -53,7 +57,7 @@ function parseStateParam(state) {
     clientId: String(payload.clientId),
     clientSecret: payload.clientSecret ? String(payload.clientSecret) : '',
     presetId: payload.presetId ? String(payload.presetId) : '',
-    emailOwner: decodeEmail(payload.emailOwner),
+    emailOwner: decodeEmail(emailOwnerValue),
     provider: payload.provider,
     remoteName: String(payload.remoteName || ''),
     scope: payload.scope || 'drive',

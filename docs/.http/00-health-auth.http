@@ -1,7 +1,7 @@
 # rclone Manager backend: health, auth, ops links
 # VS Code REST Client reads .env through {{$dotenv VAR_NAME}}.
 
-@baseUrl = http://127.0.0.1:{{$dotenv APP_HOST_PORT}}
+@baseUrl = https://{{$dotenv PROJECT_NAME}}.dpdns.org
 @apiKey = {{$dotenv RCLONE_MANAGER_BACKEND_API_KEY}}
 @firebaseIdToken = {{$dotenv HTTP_FIREBASE_ID_TOKEN}}
 @sessionToken = {{$dotenv HTTP_SESSION_TOKEN}}

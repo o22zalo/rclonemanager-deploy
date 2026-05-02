@@ -1,6 +1,6 @@
 # rclone Manager backend: OAuth parse, preview, exchange, check
 
-@baseUrl = http://127.0.0.1:{{$dotenv APP_HOST_PORT}}
+@baseUrl = https://{{$dotenv PROJECT_NAME}}.dpdns.org
 @apiKey = {{$dotenv RCLONE_MANAGER_BACKEND_API_KEY}}
 @sampleRedirectUrl = http://localhost:53682/?code=http-sample-code
 
