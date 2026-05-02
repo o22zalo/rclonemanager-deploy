@@ -12,7 +12,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="rclone OAuth" />
   <link rel="apple-touch-icon" href="/icons/icon-192.png" />
-  <link rel="stylesheet" href="/css/main.css?v=20260502-1" />
+  <link rel="stylesheet" href="/css/main.css?v=20260502-2" />
   <script>
     (function () {
       const theme = localStorage.getItem('app-theme')
@@ -100,7 +100,7 @@
             <span class="flow__step" id="flowStep5">⑤ Config</span>
           </div>
 
-          <div id="oauthStepConfig" class="oauth-step oauth-step--active">
+          <div id="oauthStepConfig" class="oauth-step oauth-step--active oauth-step--config">
             <div class="mode-grid" role="group" aria-label="OAuth mode">
               <button type="button" class="mode-card mode-card--selected" id="modeAuto" data-mode="auto">
                 <span class="mode-card__title"><span aria-hidden="true">⚡</span> Direct Auth</span>
@@ -221,7 +221,11 @@
               </div>
             </div>
 
-            <button type="button" class="btn btn--primary" id="oauthPrimaryBtn"><span id="oauthPrimaryIcon">🚀</span><span id="oauthPrimaryLabel">Direct Auth →</span></button>
+            <div class="oauth-primary-action">
+              <div class="oauth-primary-action__inner">
+                <button type="button" class="btn btn--primary" id="oauthPrimaryBtn"><span id="oauthPrimaryIcon">🚀</span><span id="oauthPrimaryLabel">Direct Auth →</span></button>
+              </div>
+            </div>
           </div>
 
           <div id="oauthStepAuthorize" class="oauth-step">
