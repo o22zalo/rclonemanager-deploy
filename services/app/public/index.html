@@ -255,7 +255,23 @@
                 <div class="panel__body stack">
                   <label class="label" for="pastedUrl">URL từ address bar sau khi authorize</label>
                   <textarea class="textarea" id="pastedUrl" rows="4" placeholder="http://localhost:53682/?code=...&state=..."></textarea>
-                  <button type="button" class="btn btn--primary" id="extractTokenBtn">⚡ Parse & Exchange Token</button>
+                  <button type="button" class="btn btn--primary" id="extractTokenBtn">⚡ Parse URL</button>
+                </div>
+              </div>
+              <div class="panel hidden" id="authCodePreviewPanel">
+                <div class="panel__header"><h2 class="h4">Xác nhận trước khi lưu Firebase</h2></div>
+                <div class="panel__body stack">
+                  <div class="metric-grid">
+                    <div class="metric"><span class="metric__label">Email owner</span><span class="metric__value" id="authPreviewEmailOwner">-</span></div>
+                    <div class="metric"><span class="metric__label">Preset label</span><span class="metric__value" id="authPreviewPresetLabel">-</span></div>
+                    <div class="metric"><span class="metric__label">Client ID</span><span class="metric__value" id="authPreviewClientId">-</span></div>
+                    <div class="metric"><span class="metric__label">Configs cùng client</span><span class="metric__value" id="authPreviewConfigCount">0</span></div>
+                  </div>
+                  <div class="alert alert--info"><span aria-hidden="true">ℹ️</span><div>Code đã được parse. Bấm xác nhận để backend exchange token và lưu Firebase.</div></div>
+                  <div class="inline">
+                    <button type="button" class="btn btn--primary" id="confirmExchangeBtn">✓ Exchange & Save</button>
+                    <button type="button" class="btn btn--secondary" id="clearAuthPreviewBtn">Parse lại</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -566,7 +582,7 @@
             <div class="panel__header"><h2 class="h4">Firebase connection</h2></div>
             <div class="panel__body stack">
               <div class="form-field"><label class="label" for="settingsDbUrl">Database URL</label><input class="input" id="settingsDbUrl" placeholder="https://project.firebaseio.com" /></div>
-              <div class="form-field"><label class="label">Google Auth env</label><div class="text-secondary">Dùng Firebase Web config trong env: GOOGLE_AUTH_FIREBASE_API_KEY, GOOGLE_AUTH_FIREBASE_AUTH_DOMAIN, GOOGLE_AUTH_FIREBASE_PROJECT_ID, GOOGLE_AUTH_FIREBASE_APP_ID, ALLOWED_GMAILS</div></div>
+              <div class="form-field"><label class="label">Google Auth env</label><div class="text-secondary">Dùng Firebase Web config trong env: RCLONE_MANAGER_GOOGLE_AUTH_FIREBASE_API_KEY, RCLONE_MANAGER_GOOGLE_AUTH_FIREBASE_AUTH_DOMAIN, RCLONE_MANAGER_GOOGLE_AUTH_FIREBASE_PROJECT_ID, RCLONE_MANAGER_GOOGLE_AUTH_FIREBASE_APP_ID, RCLONE_MANAGER_ALLOWED_GMAILS</div></div>
               <div class="form-field"><label class="label" for="settingsAuthMode">Auth mode</label><select class="select" id="settingsAuthMode"><option value="serviceAccount">service account</option><option value="secret">secret</option></select></div>
               <button type="button" class="btn btn--primary" id="testConnectionBtn">Test connection</button>
             </div>
@@ -677,7 +693,7 @@
   <script src="/js/theme.js?v=20260430-6" defer></script>
   <script src="/js/sidebar.js?v=20260501-8" defer></script>
   <script src="/js/firebase-client.js?v=20260501-1" defer></script>
-  <script src="/js/oauth.js?v=20260501-10" defer></script>
+  <script src="/js/oauth.js?v=20260502-1" defer></script>
   <script src="/js/credentials.js?v=20260501-14" defer></script>
   <script src="/js/configs.js?v=20260501-12" defer></script>
   <script src="/js/manager.js?v=20260430-6" defer></script>

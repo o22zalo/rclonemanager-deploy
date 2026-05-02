@@ -1,0 +1,77 @@
+# rclone Manager backend: rclone command runner and saved commands
+
+@baseUrl = http://127.0.0.1:{{$dotenv RCLONE_MANAGER_APP_HOST_PORT}}
+@apiKey = {{$dotenv RCLONE_MANAGER_BACKEND_API_KEY}}
+
+###
+# Run a config-free rclone command.
+POST {{baseUrl}}/api/rclone/run
+Accept: application/json
+Content-Type: application/json
+x-api-key: {{apiKey}}
+
+{
+  "command": ["version"],
+  "configIds": [],
+  "outputMode": "raw",
+  "timeoutMs": 120000
+}
+
+###
+# Pull the newest config id for full-flow testing below.
+# @name rcloneConfigs
+GET {{baseUrl}}/api/configs?limit=1&offset=0
+Accept: application/json
+x-api-key: {{apiKey}}
+
+###
+# Run the full mkdir/upload/list/size/delete flow against a real config.
+POST {{baseUrl}}/api/rclone/full-test
+Accept: application/json
+Content-Type: application/json
+x-api-key: {{apiKey}}
+
+{
+  "configId": "{{rcloneConfigs.response.body.$.items[0].id}}",
+  "timeoutMs": 300000
+}
+
+###
+# List saved commands.
+GET {{baseUrl}}/api/rclone/saved-commands
+Accept: application/json
+x-api-key: {{apiKey}}
+
+###
+# Create a sample saved command.
+# @name saveCommand
+POST {{baseUrl}}/api/rclone/saved-commands
+Accept: application/json
+Content-Type: application/json
+x-api-key: {{apiKey}}
+
+{
+  "name": "HTTP sample rclone version",
+  "command": "rclone version",
+  "outputMode": "raw"
+}
+
+###
+# Update the sample saved command by id.
+POST {{baseUrl}}/api/rclone/saved-commands
+Accept: application/json
+Content-Type: application/json
+x-api-key: {{apiKey}}
+
+{
+  "id": "{{saveCommand.response.body.$.id}}",
+  "name": "HTTP sample rclone about",
+  "command": "rclone about remote: --json",
+  "outputMode": "json"
+}
+
+###
+# Delete only the sample saved command created by this file.
+DELETE {{baseUrl}}/api/rclone/saved-commands/{{saveCommand.response.body.$.id}}
+Accept: application/json
+x-api-key: {{apiKey}}

@@ -1,0 +1,93 @@
+# rclone Manager backend: configs, quota, files, mounts
+
+@baseUrl = http://127.0.0.1:{{$dotenv RCLONE_MANAGER_APP_HOST_PORT}}
+@apiKey = {{$dotenv RCLONE_MANAGER_BACKEND_API_KEY}}
+
+###
+# List configs with filters.
+# @name listConfigs
+GET {{baseUrl}}/api/configs?limit=10&offset=0&provider=&status=&search=
+Accept: application/json
+x-api-key: {{apiKey}}
+
+###
+# Save a sample config record. It is useful for testing CRUD shape.
+# Token values are fake, so cloud/rclone actions may return provider errors.
+# @name saveSampleConfig
+POST {{baseUrl}}/api/configs/save
+Accept: application/json
+Content-Type: application/json
+x-api-key: {{apiKey}}
+
+{
+  "remoteName": "http-sample-gd",
+  "provider": "gd",
+  "emailOwner": "http-sample@example.com",
+  "clientId": "202264815644.apps.googleusercontent.com",
+  "clientSecret": "",
+  "scope": "drive",
+  "accessToken": "http-sample-access-token",
+  "refreshToken": "http-sample-refresh-token",
+  "expiry": "2099-01-01T00:00:00.000Z",
+  "rcloneConfig": "[http-sample-gd]\ntype = drive\nclient_id = 202264815644.apps.googleusercontent.com\nscope = drive\ntoken = {\"access_token\":\"http-sample-access-token\",\"token_type\":\"Bearer\",\"refresh_token\":\"http-sample-refresh-token\",\"expiry\":\"2099-01-01T00:00:00.000Z\"}"
+}
+
+###
+# Get the sample config created above.
+GET {{baseUrl}}/api/configs/{{saveSampleConfig.response.body.$.id}}
+Accept: application/json
+x-api-key: {{apiKey}}
+
+###
+# Refresh token for the sample config. Fake tokens normally return an OAuth error.
+POST {{baseUrl}}/api/configs/{{saveSampleConfig.response.body.$.id}}/refresh
+Accept: application/json
+Content-Type: application/json
+x-api-key: {{apiKey}}
+
+{}
+
+###
+# Fetch quota for the sample config. Fake tokens normally return a provider error.
+GET {{baseUrl}}/api/configs/{{saveSampleConfig.response.body.$.id}}/quota
+Accept: application/json
+x-api-key: {{apiKey}}
+
+###
+# List files for the sample config. Fake tokens normally return a provider error.
+GET {{baseUrl}}/api/configs/{{saveSampleConfig.response.body.$.id}}/files?pageToken=
+Accept: application/json
+x-api-key: {{apiKey}}
+
+###
+# List active rclone mounts.
+GET {{baseUrl}}/api/configs/mounts
+Accept: application/json
+x-api-key: {{apiKey}}
+
+###
+# Get mount state for the sample config.
+GET {{baseUrl}}/api/configs/{{saveSampleConfig.response.body.$.id}}/mount
+Accept: application/json
+x-api-key: {{apiKey}}
+
+###
+# Start mount for the sample config. Requires rclone/fuse and valid tokens to succeed.
+POST {{baseUrl}}/api/configs/{{saveSampleConfig.response.body.$.id}}/mount
+Accept: application/json
+Content-Type: application/json
+x-api-key: {{apiKey}}
+
+{}
+
+###
+# Stop mount for the sample config.
+DELETE {{baseUrl}}/api/configs/{{saveSampleConfig.response.body.$.id}}/mount
+Accept: application/json
+x-api-key: {{apiKey}}
+
+###
+# Delete only the sample config created by this file.
+DELETE {{baseUrl}}/api/configs/{{saveSampleConfig.response.body.$.id}}
+Accept: application/json
+x-api-key: {{apiKey}}

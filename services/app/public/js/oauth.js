@@ -32,6 +32,7 @@
   let provider = 'gd';
   let authUrl = '';
   let lastManualRecord = null;
+  let pendingManualExchange = null;
 
   function $(id) {
     return document.getElementById(id);
@@ -434,6 +435,7 @@
       clientId: $('clientId').value.trim(),
       clientSecret: storedPreset ? '' : $('clientSecret').value.trim(),
       presetId: storedPreset ? preset.id : '',
+      presetLabel: preset?.label || '',
       hasStoredClientSecret: storedPreset && preset.hasClientSecret,
       remoteName: $('remoteName').value.trim(),
       scope: $('scope').value,
@@ -494,6 +496,7 @@
       return;
     }
 
+    hideAuthCodePreview();
     authUrl = buildAuthUrl(cfg, emailOwner);
     if (mode === 'auto') {
       $('authUrlAuto').textContent = authUrl;
@@ -510,6 +513,62 @@
     $('pasteFlow').classList.remove('hidden');
     showOauthStep('oauthStepAuthorize');
     setFlow(3);
+  }
+
+  function hideAuthCodePreview() {
+    pendingManualExchange = null;
+    $('authCodePreviewPanel')?.classList.add('hidden');
+    if ($('authPreviewEmailOwner')) $('authPreviewEmailOwner').textContent = '-';
+    if ($('authPreviewPresetLabel')) $('authPreviewPresetLabel').textContent = '-';
+    if ($('authPreviewClientId')) $('authPreviewClientId').textContent = '-';
+    if ($('authPreviewConfigCount')) $('authPreviewConfigCount').textContent = '0';
+  }
+
+  function renderAuthCodePreview(preview) {
+    $('authPreviewEmailOwner').textContent = preview.emailOwner || '-';
+    $('authPreviewPresetLabel').textContent = preview.presetLabel || 'Custom App';
+    $('authPreviewClientId').textContent = preview.clientId || '-';
+    $('authPreviewConfigCount').textContent = String(preview.configCount || 0);
+    $('authCodePreviewPanel').classList.remove('hidden');
+  }
+
+  function configFromReturnedState(returnedState) {
+    let cfg = JSON.parse(sessionStorage.getItem('rcfg') || '{}');
+    if (!cfg.clientId && returnedState) cfg = decodeStateParam(returnedState);
+    return cfg;
+  }
+
+  async function previewAuthCode(rawUrl, code, returnedState) {
+    const cfg = configFromReturnedState(returnedState);
+    if (!cfg.clientId) {
+      window.App.utils.toast('Không tìm thấy cấu hình OAuth đã tạo. Hãy Generate URL lại.', true);
+      return;
+    }
+
+    $('extractTokenBtn').disabled = true;
+    $('extractTokenBtn').textContent = 'Đang parse...';
+    try {
+      const preview = await window.App.api.request('/api/oauth/preview', {
+        method: 'POST',
+        body: JSON.stringify({ redirectUrl: rawUrl, config: cfg }),
+      });
+      pendingManualExchange = { code, cfg };
+      renderAuthCodePreview(preview);
+    } catch (err) {
+      hideAuthCodePreview();
+      showErr(`Không preview được auth code: ${err.message}`);
+    } finally {
+      $('extractTokenBtn').disabled = false;
+      $('extractTokenBtn').textContent = '⚡ Parse URL';
+    }
+  }
+
+  function confirmManualExchange() {
+    if (!pendingManualExchange) {
+      window.App.utils.toast('Chưa có auth code đã parse.', true);
+      return;
+    }
+    exchangeCode(pendingManualExchange.code, pendingManualExchange.cfg);
   }
 
   function extractFromPastedUrl() {
@@ -545,8 +604,7 @@
       return;
     }
 
-    const cfg = JSON.parse(sessionStorage.getItem('rcfg') || '{}');
-    exchangeCode(code, cfg);
+    previewAuthCode(raw, code, returnedState);
   }
 
   async function exchangeCode(code, cfg) {
@@ -619,6 +677,7 @@
     $('saveConfigBtn').textContent = result.action === 'updated' ? 'Đã cập nhật Firebase' : 'Đã lưu Firebase';
     $('saveConfigBtn').disabled = true;
     lastManualRecord = null;
+    hideAuthCodePreview();
     if (!document.body.classList.contains('auth-locked')) {
       if (window.App.Configs) window.App.Configs.loadConfigs().catch(() => {});
       if (window.App.Manager) window.App.Manager.refreshOptions().catch(() => {});
@@ -670,6 +729,7 @@
     sessionStorage.removeItem('rcfg');
     sessionStorage.removeItem('rstate');
     lastManualRecord = null;
+    hideAuthCodePreview();
     $('remoteName').value = '';
     $('saveConfigBtn').textContent = '☁️ Save to Firebase';
     $('saveConfigBtn').disabled = false;
@@ -708,6 +768,9 @@
     $('openAuthAutoBtn')?.addEventListener('click', () => window.open(authUrl, '_blank', 'noopener'));
     $('openAuthPasteBtn')?.addEventListener('click', () => window.open(authUrl, '_blank', 'noopener'));
     $('extractTokenBtn')?.addEventListener('click', extractFromPastedUrl);
+    $('confirmExchangeBtn')?.addEventListener('click', confirmManualExchange);
+    $('clearAuthPreviewBtn')?.addEventListener('click', hideAuthCodePreview);
+    $('pastedUrl')?.addEventListener('input', hideAuthCodePreview);
     $('oauthBackBtn')?.addEventListener('click', () => {
       showOauthStep('oauthStepConfig');
       setFlow(1);

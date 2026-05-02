@@ -243,7 +243,7 @@
       window.open(mount.filebrowserUrl, '_blank', 'noopener');
       return;
     }
-    window.App.utils.toast('Chưa cấu hình FILEBROWSER_PUBLIC_URL. Dùng path trong Filebrowser để mở thư mục mounted.', true);
+    window.App.utils.toast('Chưa cấu hình RCLONE_MANAGER_FILEBROWSER_PUBLIC_URL. Dùng path trong Filebrowser để mở thư mục mounted.', true);
   }
 
   function copyMountPath(id) {

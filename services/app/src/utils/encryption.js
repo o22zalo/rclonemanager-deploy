@@ -3,7 +3,7 @@ const crypto = require('crypto');
 const PREFIX = 'enc:v1:';
 
 function getKey() {
-  const raw = process.env.ENCRYPTION_KEY;
+  const raw = process.env.RCLONE_MANAGER_ENCRYPTION_KEY;
   if (!raw) return null;
   return crypto.createHash('sha256').update(raw).digest();
 }

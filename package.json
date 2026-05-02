@@ -56,7 +56,7 @@
     "git-addfile-packagejson": "powershell -NoProfile -Command \"Start-Process -FilePath cmd.exe -WorkingDirectory '%CD%' -ArgumentList '/k', 'git addfile packagejson'\"",
     "git-addfile-omessage": "powershell -NoProfile -Command \"Start-Process -FilePath cmd.exe -WorkingDirectory '%CD%' -ArgumentList '/k', 'git addfile omessage'\"",
     "git-addfile-ogitignore": "powershell -NoProfile -Command \"Start-Process -FilePath cmd.exe -WorkingDirectory '%CD%' -ArgumentList '/k', 'git addfile ogitignore'\"",
-    "env-pull.local": "powershell -NoProfile -Command \"Start-Process -FilePath cmd.exe -WorkingDirectory '%CD%' -ArgumentList '/k', 'dotenvrtdb -e .env -- dotenvrtdb -e .env.local --pull -eUrl=$env:DOTENVRTDB_URL'",
+    "env-pull.local": "powershell -NoProfile -Command \"Start-Process -FilePath cmd.exe -WorkingDirectory '%CD%' -ArgumentList '/k', 'dotenvrtdb -e .env -- dotenvrtdb -e .env.local --pull -eUrl=$env:RCLONE_MANAGER_DOTENVRTDB_URL'",
     "stack:clone": "node scripts/clone-stack.js --output H:/nodejs-tester/dockerstack-omniroute --name dockerstack-omniroute --force",
     "stack:clone-dockerstack-s3-proxy": "node scripts/clone-stack.js --output H:/nodejs-tester/dockerstack-s3-proxy --name dockerstack-s3-proxy --force",
     "stack:clone-dockerstack-pocketbase": "node scripts/clone-stack.js --output H:/nodejs-tester/dockerstack-pocketbase --name dockerstack-pocketbase --force",
@@ -65,6 +65,6 @@
     "env-cloudflared-create": "ctrlj&powershell -NoProfile -Command \"Start-Process -FilePath cmd.exe -WorkingDirectory '%CD%' -ArgumentList '/k', 'dotenvrtdb -e .env -- ocli cloudflared'\"",
     "tailscale-init": "node tailscale/tailscale-init.js .env",
     "ocli-gh": "ctrlj&powershell -NoProfile -Command \"Start-Process -FilePath cmd.exe -WorkingDirectory '%CD%' -ArgumentList '/k', 'dotenvrtdb -e .env -- ocli gh'\"",
-    "env-push": "ctrlj&powershell -NoProfile -Command \"Start-Process -FilePath cmd.exe -WorkingDirectory '%CD%' -ArgumentList '/k', 'dotenvrtdb -e .env --push -eUrl=$env:DOTENVRTDB_URL'\""
+    "env-push": "ctrlj&powershell -NoProfile -Command \"Start-Process -FilePath cmd.exe -WorkingDirectory '%CD%' -ArgumentList '/k', 'dotenvrtdb -e .env --push -eUrl=$env:RCLONE_MANAGER_DOTENVRTDB_URL'\""
   }
 }

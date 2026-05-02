@@ -23,7 +23,7 @@ function requestBaseUrl(req) {
 }
 
 function frontendRedirect(req, params) {
-  const base = process.env.FRONTEND_URL || requestBaseUrl(req);
+  const base = process.env.RCLONE_MANAGER_FRONTEND_URL || requestBaseUrl(req);
   const url = new URL(base);
   Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
   return url.toString();
@@ -58,6 +58,7 @@ function normalizeRequestConfig(body) {
     clientId: String(cfg.clientId || '').trim(),
     clientSecret: cfg.clientSecret ? String(cfg.clientSecret) : '',
     presetId: String(cfg.presetId || cfg.preset_id || '').trim(),
+    presetLabel: String(cfg.presetLabel || cfg.preset_label || '').trim(),
     emailOwner: String(cfg.emailOwner || cfg.email_owner || '').trim(),
     provider: cfg.provider,
     remoteName: String(cfg.remoteName || '').trim(),
@@ -79,6 +80,28 @@ async function findPresetByClientId(cfg) {
     .filter((preset) => String(preset.provider || '') === String(cfg.provider || '')
       && normalizedClientId(preset.clientId) === clientId)
     .sort((a, b) => Number(b.updatedAt || b.createdAt || 0) - Number(a.updatedAt || a.createdAt || 0))[0] || null;
+}
+
+async function findPresetForSummary(cfg) {
+  if (cfg.presetId) {
+    const preset = await firebase.get(`${PRESETS_COLLECTION}/${cfg.presetId}`);
+    if (!preset) {
+      const err = new Error('OAuth preset not found.');
+      err.status = 404;
+      throw err;
+    }
+    return { id: cfg.presetId, ...preset };
+  }
+  return findPresetByClientId(cfg);
+}
+
+async function countConfigsByClientId(cfg) {
+  const clientId = normalizedClientId(cfg.clientId);
+  if (!clientId || !cfg.provider) return 0;
+  const configs = await firebase.list(COLLECTION);
+  return configs.filter((item) =>
+    String(item.provider || '') === String(cfg.provider || '')
+    && normalizedClientId(item.clientId) === clientId).length;
 }
 
 function configWithPresetSecret(cfg, preset) {
@@ -143,6 +166,74 @@ function validateExchangeInput(code, cfg) {
     err.status = 400;
     throw err;
   }
+}
+
+function parseOAuthRedirectUrl(raw) {
+  const value = String(raw || '').trim();
+  if (!value) return { code: '', state: '' };
+
+  let url;
+  try {
+    url = new URL(value);
+  } catch (_err) {
+    const err = new Error('redirectUrl must be a valid URL.');
+    err.status = 400;
+    throw err;
+  }
+
+  const oauthError = url.searchParams.get('error');
+  if (oauthError) {
+    const detail = url.searchParams.get('error_description') || oauthError;
+    const err = new Error(`OAuth error: ${detail}`);
+    err.status = 400;
+    throw err;
+  }
+
+  return {
+    code: String(url.searchParams.get('code') || '').trim(),
+    state: String(url.searchParams.get('state') || '').trim(),
+  };
+}
+
+function nonEmptyConfigValues(cfg) {
+  return Object.fromEntries(Object.entries(cfg || {}).filter(([_key, value]) => {
+    if (value === undefined || value === null) return false;
+    if (typeof value === 'string') return value.trim() !== '';
+    return true;
+  }));
+}
+
+function requestHasConfig(body) {
+  const cfg = body?.config || body?.cfg || {};
+  return Object.keys(cfg).length > 0 || [
+    'clientId',
+    'clientSecret',
+    'presetId',
+    'emailOwner',
+    'provider',
+    'remoteName',
+    'redirectUri',
+  ].some((key) => Object.prototype.hasOwnProperty.call(body || {}, key));
+}
+
+function previewRequest(body) {
+  const parsedUrl = parseOAuthRedirectUrl(body.redirectUrl || body.url || body.authCodeUrl);
+  const code = String(body.code || parsedUrl.code || '').trim();
+
+  let cfg = {};
+  if (parsedUrl.state) cfg = parseStateParam(parsedUrl.state);
+  if (requestHasConfig(body)) {
+    cfg = {
+      ...cfg,
+      ...nonEmptyConfigValues(normalizeRequestConfig(body)),
+    };
+  }
+
+  return {
+    code,
+    stateFound: Boolean(parsedUrl.state),
+    cfg,
+  };
 }
 
 async function exchangeAndSave(code, cfg) {
@@ -213,6 +304,31 @@ router.post('/exchange', async (req, res, next) => {
     res.status(saved.action === 'created' ? 201 : 200).json({
       action: saved.action,
       record: publicRecord(saved.record),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/preview', async (req, res, next) => {
+  try {
+    const { code, stateFound, cfg } = previewRequest(req.body || {});
+    validateExchangeInput(code, cfg);
+
+    const preset = await findPresetForSummary(cfg);
+    const configCount = await countConfigsByClientId(cfg);
+    res.json({
+      ok: true,
+      codeFound: Boolean(code),
+      stateFound,
+      provider: cfg.provider,
+      remoteName: cfg.remoteName,
+      emailOwner: cfg.emailOwner,
+      presetId: preset?.id || cfg.presetId || '',
+      presetLabel: preset?.label || cfg.presetLabel || 'Custom App',
+      clientId: cfg.clientId,
+      configCount,
+      redirectUri: cfg.redirectUri,
     });
   } catch (err) {
     next(err);

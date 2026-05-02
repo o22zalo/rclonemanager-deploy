@@ -10,19 +10,19 @@ const crypto = require("crypto");
 // tailscale/tailscale-keep-ip.js
 // Modes:
 //   prepare     - optionally restore tailscaled.state from Firebase (base64),
-//                 restore certs, and/or remove existing machine(s) by PROJECT_NAME
+//                 restore certs, and/or remove existing machine(s) by RCLONE_MANAGER_PROJECT_NAME
 //   backup-loop - periodically backup tailscaled.state + certs to Firebase
 //
 // Environment:
-//   TAILSCALE_KEEP_IP_ENABLE=true|false
-//   TAILSCALE_KEEP_IP_REMOVE_HOSTNAME_ENABLE=true|false
-//   TAILSCALE_KEEP_IP_FIREBASE_URL=<https://.../path.json?auth=...>
-//   TAILSCALE_KEEP_IP_STATE_FILE=/var/lib/tailscale/tailscaled.state
-//   TAILSCALE_KEEP_IP_CERTS_DIR=/var/lib/tailscale/certs
-//   TAILSCALE_KEEP_IP_INTERVAL_SEC=30
-//   PROJECT_NAME=<hostname to keep>
-//   TAILSCALE_TS_TAILNET=- (or TS_TAILNET)
-//   TAILSCALE_CLIENTID + TAILSCALE_AUTHKEY
+//   RCLONE_MANAGER_TAILSCALE_KEEP_IP_ENABLE=true|false
+//   RCLONE_MANAGER_TAILSCALE_KEEP_IP_REMOVE_HOSTNAME_ENABLE=true|false
+//   RCLONE_MANAGER_TAILSCALE_KEEP_IP_FIREBASE_URL=<https://.../path.json?auth=...>
+//   RCLONE_MANAGER_TAILSCALE_KEEP_IP_STATE_FILE=/var/lib/tailscale/tailscaled.state
+//   RCLONE_MANAGER_TAILSCALE_KEEP_IP_CERTS_DIR=/var/lib/tailscale/certs
+//   RCLONE_MANAGER_TAILSCALE_KEEP_IP_INTERVAL_SEC=30
+//   RCLONE_MANAGER_PROJECT_NAME=<hostname to keep>
+//   RCLONE_MANAGER_TAILSCALE_TS_TAILNET=- (or RCLONE_MANAGER_TS_TAILNET)
+//   RCLONE_MANAGER_TAILSCALE_CLIENTID + RCLONE_MANAGER_TAILSCALE_AUTHKEY
 //
 // Firebase keys (under the same base URL):
 //   - state: tailscaled.state payload
@@ -83,11 +83,11 @@ function ensureServeConfigFileFromEnv() {
   };
 
   const projectName = trimLeadingTrailingDots(
-    normalizeHostLabel((process.env.PROJECT_NAME_TAILSCALE || process.env.PROJECT_NAME || "dockerstacks3proxy").trim()),
+    normalizeHostLabel((process.env.RCLONE_MANAGER_PROJECT_NAME_TAILSCALE || process.env.RCLONE_MANAGER_PROJECT_NAME || "dockerstacks3proxy").trim()),
   );
-  const tailnetDomain = trimLeadingTrailingDots(normalizeHostLabel((process.env.TAILSCALE_TAILNET_DOMAIN || "").trim()));
+  const tailnetDomain = trimLeadingTrailingDots(normalizeHostLabel((process.env.RCLONE_MANAGER_TAILSCALE_TAILNET_DOMAIN || "").trim()));
   if (!tailnetDomain) {
-    console.log("⚠️  serve-config: TAILSCALE_TAILNET_DOMAIN is empty, skip writing tailscale/serve.json.");
+    console.log("⚠️  serve-config: RCLONE_MANAGER_TAILSCALE_TAILNET_DOMAIN is empty, skip writing tailscale/serve.json.");
     return;
   }
   const fqdn = [projectName, tailnetDomain].filter(Boolean).join(".");
@@ -512,11 +512,11 @@ async function restoreCerts({ firebaseUrl, certsDirPath }) {
 
 async function removeHostnameFromTailnet({ hostname, tailnet, clientSecret, clientId }) {
   if (!hostname) {
-    console.log("⚠️  remove-hostname: PROJECT_NAME is empty, skipping.");
+    console.log("⚠️  remove-hostname: RCLONE_MANAGER_PROJECT_NAME is empty, skipping.");
     return;
   }
   if (!clientSecret || !clientId) {
-    console.log("⚠️  remove-hostname: missing TAILSCALE_AUTHKEY or TAILSCALE_CLIENTID, skipping.");
+    console.log("⚠️  remove-hostname: missing RCLONE_MANAGER_TAILSCALE_AUTHKEY or RCLONE_MANAGER_TAILSCALE_CLIENTID, skipping.");
     return;
   }
 
@@ -580,18 +580,18 @@ async function run() {
   ensureServeConfigFileFromEnv();
 
   const mode = (process.argv[2] || "prepare").trim().toLowerCase();
-  const keepIpEnabled = toBool(process.env.TAILSCALE_KEEP_IP_ENABLE, false);
-  const removeHostnameEnabled = toBool(process.env.TAILSCALE_KEEP_IP_REMOVE_HOSTNAME_ENABLE, keepIpEnabled);
+  const keepIpEnabled = toBool(process.env.RCLONE_MANAGER_TAILSCALE_KEEP_IP_ENABLE, false);
+  const removeHostnameEnabled = toBool(process.env.RCLONE_MANAGER_TAILSCALE_KEEP_IP_REMOVE_HOSTNAME_ENABLE, keepIpEnabled);
 
-  const firebaseUrl = (process.env.TAILSCALE_KEEP_IP_FIREBASE_URL || "").trim();
-  const stateFilePath = (process.env.TAILSCALE_KEEP_IP_STATE_FILE || "/var/lib/tailscale/tailscaled.state").trim();
-  const certsDirPath = (process.env.TAILSCALE_KEEP_IP_CERTS_DIR || path.join(path.dirname(stateFilePath), "certs")).trim();
-  const intervalSecRaw = (process.env.TAILSCALE_KEEP_IP_INTERVAL_SEC || "30").trim();
+  const firebaseUrl = (process.env.RCLONE_MANAGER_TAILSCALE_KEEP_IP_FIREBASE_URL || "").trim();
+  const stateFilePath = (process.env.RCLONE_MANAGER_TAILSCALE_KEEP_IP_STATE_FILE || "/var/lib/tailscale/tailscaled.state").trim();
+  const certsDirPath = (process.env.RCLONE_MANAGER_TAILSCALE_KEEP_IP_CERTS_DIR || path.join(path.dirname(stateFilePath), "certs")).trim();
+  const intervalSecRaw = (process.env.RCLONE_MANAGER_TAILSCALE_KEEP_IP_INTERVAL_SEC || "30").trim();
   const intervalSec = Number.isInteger(Number(intervalSecRaw)) ? Number(intervalSecRaw) : 30;
-  const hostname = (process.env.PROJECT_NAME || "").trim();
-  const tailnet = (process.env.TAILSCALE_TS_TAILNET || process.env.TS_TAILNET || "-").trim() || "-";
-  const clientSecret = (process.env.TAILSCALE_AUTHKEY || "").trim();
-  const clientId = (process.env.TAILSCALE_CLIENTID || "").trim();
+  const hostname = (process.env.RCLONE_MANAGER_PROJECT_NAME || "").trim();
+  const tailnet = (process.env.RCLONE_MANAGER_TAILSCALE_TS_TAILNET || process.env.RCLONE_MANAGER_TS_TAILNET || "-").trim() || "-";
+  const clientSecret = (process.env.RCLONE_MANAGER_TAILSCALE_AUTHKEY || "").trim();
+  const clientId = (process.env.RCLONE_MANAGER_TAILSCALE_CLIENTID || "").trim();
   const hasFirebaseUrl = isLikelyFirebaseUrl(firebaseUrl);
   const firebaseStateUrl = hasFirebaseUrl ? firebaseChildUrl(firebaseUrl, "state") : "";
   const firebaseCertsUrl = hasFirebaseUrl ? firebaseChildUrl(firebaseUrl, "certs") : "";
@@ -607,7 +607,7 @@ async function run() {
 
   if (mode === "prepare") {
     if (!hasFirebaseUrl) {
-      console.log("⚠️  prepare: TAILSCALE_KEEP_IP_FIREBASE_URL is invalid/missing, skipping cert/state restore.");
+      console.log("⚠️  prepare: RCLONE_MANAGER_TAILSCALE_KEEP_IP_FIREBASE_URL is invalid/missing, skipping cert/state restore.");
     } else {
       try {
         await restoreCerts({ firebaseUrl: firebaseCertsUrl, certsDirPath });
@@ -635,19 +635,19 @@ async function run() {
           }
         }
       } else {
-        console.log("ℹ️  prepare: keep-ip restore disabled by TAILSCALE_KEEP_IP_ENABLE=false.");
+        console.log("ℹ️  prepare: keep-ip restore disabled by RCLONE_MANAGER_TAILSCALE_KEEP_IP_ENABLE=false.");
       }
     }
 
     if (keepIpEnabled && !hasFirebaseUrl) {
-      console.error("❌  TAILSCALE_KEEP_IP_ENABLE=true requires valid TAILSCALE_KEEP_IP_FIREBASE_URL.");
+      console.error("❌  RCLONE_MANAGER_TAILSCALE_KEEP_IP_ENABLE=true requires valid RCLONE_MANAGER_TAILSCALE_KEEP_IP_FIREBASE_URL.");
       process.exit(1);
     }
 
     if (removeHostnameEnabled) {
       await removeHostnameFromTailnet({ hostname, tailnet, clientSecret, clientId });
     } else {
-      console.log("ℹ️  prepare: remove-hostname disabled by TAILSCALE_KEEP_IP_REMOVE_HOSTNAME_ENABLE=false.");
+      console.log("ℹ️  prepare: remove-hostname disabled by RCLONE_MANAGER_TAILSCALE_KEEP_IP_REMOVE_HOSTNAME_ENABLE=false.");
     }
 
     if (!keepIpEnabled && !removeHostnameEnabled && !hasFirebaseUrl) {
@@ -660,7 +660,7 @@ async function run() {
 
   if (mode === "backup-once") {
     if (!hasFirebaseUrl) {
-      console.error("❌  TAILSCALE_KEEP_IP_FIREBASE_URL is invalid or missing (must be https URL ending with .json).");
+      console.error("❌  RCLONE_MANAGER_TAILSCALE_KEEP_IP_FIREBASE_URL is invalid or missing (must be https URL ending with .json).");
       process.exit(1);
     }
 
@@ -683,7 +683,7 @@ async function run() {
         lastHashRef: { value: "" },
       });
     } else {
-      console.log("ℹ️  backup-once: state backup disabled by TAILSCALE_KEEP_IP_ENABLE=false.");
+      console.log("ℹ️  backup-once: state backup disabled by RCLONE_MANAGER_TAILSCALE_KEEP_IP_ENABLE=false.");
     }
 
     console.log("\n✅  backup-once complete.\n");
@@ -692,7 +692,7 @@ async function run() {
 
   if (mode === "backup-loop") {
     if (!hasFirebaseUrl) {
-      console.error("❌  TAILSCALE_KEEP_IP_FIREBASE_URL is invalid or missing (must be https URL ending with .json).");
+      console.error("❌  RCLONE_MANAGER_TAILSCALE_KEEP_IP_FIREBASE_URL is invalid or missing (must be https URL ending with .json).");
       process.exit(1);
     }
 
@@ -701,7 +701,7 @@ async function run() {
     const lastCertsHashRef = { value: "" };
     console.log(`ℹ️  backup-loop: interval ${Math.max(5, intervalSec)}s`);
     if (!keepIpEnabled) {
-      console.log("ℹ️  backup-loop: state backup disabled by TAILSCALE_KEEP_IP_ENABLE=false.");
+      console.log("ℹ️  backup-loop: state backup disabled by RCLONE_MANAGER_TAILSCALE_KEEP_IP_ENABLE=false.");
     }
     console.log("ℹ️  backup-loop: certs backup is always enabled.");
 

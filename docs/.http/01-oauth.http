@@ -1,0 +1,77 @@
+# rclone Manager backend: OAuth parse, preview, exchange, check
+
+@baseUrl = http://127.0.0.1:{{$dotenv RCLONE_MANAGER_APP_HOST_PORT}}
+@apiKey = {{$dotenv RCLONE_MANAGER_BACKEND_API_KEY}}
+@sampleRedirectUrl = http://localhost:53682/?code=http-sample-code
+
+###
+# List saved OAuth credential presets as public-safe items.
+GET {{baseUrl}}/api/oauth/presets
+Accept: application/json
+x-api-key: {{apiKey}}
+
+###
+# Preview a pasted OAuth redirect URL before saving to Firebase.
+# This parses code and returns email owner, preset label, client id, and config count.
+POST {{baseUrl}}/api/oauth/preview
+Accept: application/json
+Content-Type: application/json
+x-api-key: {{apiKey}}
+
+{
+  "redirectUrl": "{{sampleRedirectUrl}}",
+  "config": {
+    "provider": "gd",
+    "remoteName": "http-preview-gd",
+    "emailOwner": "http-preview@example.com",
+    "clientId": "202264815644.apps.googleusercontent.com",
+    "clientSecret": "",
+    "presetLabel": "rclone (GDrive client ID)",
+    "scope": "drive",
+    "redirectUri": "http://localhost:53682/"
+  }
+}
+
+###
+# Exchange an OAuth code and save/update Firebase.
+# The sample code is intentionally fake; replace code/redirect config with a real auth result.
+POST {{baseUrl}}/api/oauth/exchange
+Accept: application/json
+Content-Type: application/json
+x-api-key: {{apiKey}}
+
+{
+  "code": "replace-with-real-oauth-code",
+  "config": {
+    "provider": "gd",
+    "remoteName": "gd-http-real-user",
+    "emailOwner": "user@example.com",
+    "clientId": "202264815644.apps.googleusercontent.com",
+    "clientSecret": "",
+    "presetLabel": "rclone (GDrive client ID)",
+    "scope": "drive",
+    "redirectUri": "http://localhost:53682/"
+  }
+}
+
+###
+# Pull the newest config id for result/check calls below.
+# @name oauthConfigs
+GET {{baseUrl}}/api/configs?limit=1&offset=0
+Accept: application/json
+x-api-key: {{apiKey}}
+
+###
+# Fetch a saved OAuth result/config by id.
+GET {{baseUrl}}/api/oauth/result/{{oauthConfigs.response.body.$.items[0].id}}
+Accept: application/json
+x-api-key: {{apiKey}}
+
+###
+# Run rclone about against a saved config.
+POST {{baseUrl}}/api/oauth/check/{{oauthConfigs.response.body.$.items[0].id}}
+Accept: application/json
+Content-Type: application/json
+x-api-key: {{apiKey}}
+
+{}

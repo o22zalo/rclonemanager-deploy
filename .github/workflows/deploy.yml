@@ -36,9 +36,9 @@ on:
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  DOTENVRTDB_URL: ${{ secrets.DOTENVRTDB_URL }}
+  RCLONE_MANAGER_DOTENVRTDB_URL: ${{ secrets.RCLONE_MANAGER_DOTENVRTDB_URL }}
   STOP_RUNNER_ID: "${{ github.run_id }}-${{ github.run_attempt }}"
-  STOP_LISTENER_ENABLED: "true"
+  RCLONE_MANAGER_STOP_LISTENER_ENABLED: "true"
 
 jobs:
   deploy:

@@ -1,0 +1,71 @@
+# rclone Manager backend: credential presets
+
+@baseUrl = http://127.0.0.1:{{$dotenv RCLONE_MANAGER_APP_HOST_PORT}}
+@apiKey = {{$dotenv RCLONE_MANAGER_BACKEND_API_KEY}}
+
+###
+# List presets.
+GET {{baseUrl}}/api/presets
+Accept: application/json
+x-api-key: {{apiKey}}
+
+###
+# Create a sample preset.
+# @name createPreset
+POST {{baseUrl}}/api/presets
+Accept: application/json
+Content-Type: application/json
+x-api-key: {{apiKey}}
+
+{
+  "label": "HTTP sample Google preset",
+  "provider": "gd",
+  "clientId": "http-sample-client-id.apps.googleusercontent.com",
+  "clientSecret": "http-sample-client-secret",
+  "redirectUri": "http://localhost:53682/"
+}
+
+###
+# Update the sample preset.
+PUT {{baseUrl}}/api/presets/{{createPreset.response.body.$.id}}
+Accept: application/json
+Content-Type: application/json
+x-api-key: {{apiKey}}
+
+{
+  "label": "HTTP sample Google preset updated",
+  "provider": "gd",
+  "clientId": "http-sample-client-id.apps.googleusercontent.com",
+  "clientSecret": "http-sample-client-secret",
+  "redirectUri": "http://localhost:53682/"
+}
+
+###
+# List configs using this preset.
+GET {{baseUrl}}/api/presets/{{createPreset.response.body.$.id}}/configs
+Accept: application/json
+x-api-key: {{apiKey}}
+
+###
+# Recount usage for this preset.
+POST {{baseUrl}}/api/presets/{{createPreset.response.body.$.id}}/recount
+Accept: application/json
+Content-Type: application/json
+x-api-key: {{apiKey}}
+
+{}
+
+###
+# Recount all preset usage.
+POST {{baseUrl}}/api/presets/recount
+Accept: application/json
+Content-Type: application/json
+x-api-key: {{apiKey}}
+
+{}
+
+###
+# Delete only the sample preset created by this file.
+DELETE {{baseUrl}}/api/presets/{{createPreset.response.body.$.id}}
+Accept: application/json
+x-api-key: {{apiKey}}

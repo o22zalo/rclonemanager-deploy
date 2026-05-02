@@ -78,10 +78,10 @@ async function restRequest(path, options = {}) {
 async function initialize() {
   if (initialized) return;
 
-  const databaseUrl = process.env.FIREBASE_DATABASE_URL;
-  const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
-  const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
-  const databaseSecret = process.env.FIREBASE_DATABASE_SECRET;
+  const databaseUrl = process.env.RCLONE_MANAGER_FIREBASE_DATABASE_URL;
+  const serviceAccountJson = process.env.RCLONE_MANAGER_FIREBASE_SERVICE_ACCOUNT_JSON;
+  const serviceAccountPath = process.env.RCLONE_MANAGER_FIREBASE_SERVICE_ACCOUNT_PATH;
+  const databaseSecret = process.env.RCLONE_MANAGER_FIREBASE_DATABASE_SECRET;
 
   if (databaseUrl && (serviceAccountJson || serviceAccountPath)) {
     let credentialData;

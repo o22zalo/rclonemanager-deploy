@@ -9,8 +9,8 @@ npm install -g @tltdh61/dotenvrtdb
 echo "=== [pull-env] Pulling .env & credentials ==="
 mkdir -p services/webssh/.ssh
 
-dotenvrtdb -e .env --pull -eUrl="$DOTENVRTDB_URL" \
+dotenvrtdb -e .env --pull -eUrl="$RCLONE_MANAGER_DOTENVRTDB_URL" \
   --writefilebase64=cloudflared/credentials.json \
-  --var=CLOUDFLARED_TUNNEL_CREDENTIALS_BASE64
+  --var=RCLONE_MANAGER_CLOUDFLARED_TUNNEL_CREDENTIALS_BASE64
 
 echo "✅ [pull-env] Done"

@@ -14,7 +14,7 @@ dotenv.config();
 dotenv.config({ path: path.resolve(__dirname, '..', '..', '..', '.env') });
 
 const app = express();
-const port = Number(process.env.PORT || 53682);
+const port = Number(process.env.RCLONE_MANAGER_PORT || process.env.RCLONE_MANAGER_APP_PORT || 53682);
 const publicDir = path.join(__dirname, '..', 'public');
 
 function envFlag(name, fallback = false) {
@@ -37,14 +37,14 @@ function publicUrlFromEnv(name) {
 
 function opsLinks() {
   return [
-    { key: 'ttyd', label: 'ttyd', url: publicUrlFromEnv('CLOUDFLARED_TUNNEL_HOSTNAME_3') },
-    { key: 'dozzle', label: 'dozzle', url: publicUrlFromEnv('CLOUDFLARED_TUNNEL_HOSTNAME_4') },
-    { key: 'files', label: 'files', url: publicUrlFromEnv('CLOUDFLARED_TUNNEL_HOSTNAME_5') },
+    { key: 'ttyd', label: 'ttyd', url: publicUrlFromEnv('RCLONE_MANAGER_CLOUDFLARED_TUNNEL_HOSTNAME_3') },
+    { key: 'dozzle', label: 'dozzle', url: publicUrlFromEnv('RCLONE_MANAGER_CLOUDFLARED_TUNNEL_HOSTNAME_4') },
+    { key: 'files', label: 'files', url: publicUrlFromEnv('RCLONE_MANAGER_CLOUDFLARED_TUNNEL_HOSTNAME_5') },
   ].filter((link) => link.url);
 }
 
 function sessionSecret() {
-  return process.env.AUTH_SESSION_SECRET || process.env.BACKEND_API_KEY || 'change-me';
+  return process.env.RCLONE_MANAGER_AUTH_SESSION_SECRET || process.env.RCLONE_MANAGER_BACKEND_API_KEY || 'change-me';
 }
 
 function safeEqual(a, b) {
@@ -54,7 +54,7 @@ function safeEqual(a, b) {
 }
 
 function signSession(email) {
-  const exp = Date.now() + (Number(process.env.AUTH_SESSION_TTL_MS || 86400000));
+  const exp = Date.now() + (Number(process.env.RCLONE_MANAGER_AUTH_SESSION_TTL_MS || 86400000));
   const payload = `${email}|${exp}`;
   const sig = crypto.createHmac('sha256', sessionSecret()).update(payload).digest('hex');
   return Buffer.from(`${payload}|${sig}`).toString('base64url');
@@ -75,13 +75,13 @@ function verifySession(token) {
 
 function firebaseAuthConfig() {
   return {
-    apiKey: process.env.GOOGLE_AUTH_FIREBASE_API_KEY || '',
-    authDomain: process.env.GOOGLE_AUTH_FIREBASE_AUTH_DOMAIN || '',
-    databaseURL: process.env.GOOGLE_AUTH_FIREBASE_DATABASE_URL || '',
-    projectId: process.env.GOOGLE_AUTH_FIREBASE_PROJECT_ID || '',
-    storageBucket: process.env.GOOGLE_AUTH_FIREBASE_STORAGE_BUCKET || '',
-    messagingSenderId: process.env.GOOGLE_AUTH_FIREBASE_MESSAGING_SENDER_ID || '',
-    appId: process.env.GOOGLE_AUTH_FIREBASE_APP_ID || '',
+    apiKey: process.env.RCLONE_MANAGER_GOOGLE_AUTH_FIREBASE_API_KEY || '',
+    authDomain: process.env.RCLONE_MANAGER_GOOGLE_AUTH_FIREBASE_AUTH_DOMAIN || '',
+    databaseURL: process.env.RCLONE_MANAGER_GOOGLE_AUTH_FIREBASE_DATABASE_URL || '',
+    projectId: process.env.RCLONE_MANAGER_GOOGLE_AUTH_FIREBASE_PROJECT_ID || '',
+    storageBucket: process.env.RCLONE_MANAGER_GOOGLE_AUTH_FIREBASE_STORAGE_BUCKET || '',
+    messagingSenderId: process.env.RCLONE_MANAGER_GOOGLE_AUTH_FIREBASE_MESSAGING_SENDER_ID || '',
+    appId: process.env.RCLONE_MANAGER_GOOGLE_AUTH_FIREBASE_APP_ID || '',
   };
 }
 
@@ -91,7 +91,7 @@ function hasFirebaseAuthConfig() {
 }
 
 function authRequired() {
-  return envFlag('REQUIRE_GOOGLE_AUTH', true);
+  return envFlag('RCLONE_MANAGER_REQUIRE_GOOGLE_AUTH', true);
 }
 
 function authError(message, status = 401) {
@@ -166,11 +166,11 @@ async function requireGoogleAuth(req, res, next) {
 }
 
 function parseAllowlist() {
-  return (process.env.ALLOWED_GMAILS || '').split(',').map((v) => v.trim().toLowerCase()).filter(Boolean);
+  return (process.env.RCLONE_MANAGER_ALLOWED_GMAILS || '').split(',').map((v) => v.trim().toLowerCase()).filter(Boolean);
 }
 
 function hasValidApiKey(req) {
-  const key = process.env.BACKEND_API_KEY || '';
+  const key = process.env.RCLONE_MANAGER_BACKEND_API_KEY || '';
   if (!key) return false;
   const incoming = req.get('x-api-key') || req.query.apiKey || '';
   return safeEqual(incoming, key);
@@ -188,7 +188,7 @@ async function requireApiAuth(req, res, next) {
   }
 
   if (authRequired()) return requireGoogleAuth(req, res, next);
-  if (process.env.BACKEND_API_KEY) return res.status(401).json({ error: 'Invalid API key.' });
+  if (process.env.RCLONE_MANAGER_BACKEND_API_KEY) return res.status(401).json({ error: 'Invalid API key.' });
   return next();
 }
 
@@ -210,7 +210,7 @@ async function googleLogin(req, res) {
 
 app.set('trust proxy', true);
 
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
+const allowedOrigins = (process.env.RCLONE_MANAGER_ALLOWED_ORIGINS || '')
   .split(',')
   .map((item) => item.trim())
   .filter(Boolean);

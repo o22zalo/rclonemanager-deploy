@@ -14,7 +14,7 @@ function defaultMountRoot() {
 }
 
 function mountRoot() {
-  return path.resolve(process.env.RCLONE_MOUNT_ROOT || defaultMountRoot());
+  return path.resolve(process.env.RCLONE_MANAGER_RCLONE_MOUNT_ROOT || defaultMountRoot());
 }
 
 function safeMountName(remoteName, fallback) {
@@ -39,13 +39,13 @@ function publicUrlFromEnv(name) {
 }
 
 function filebrowserBaseUrl() {
-  const explicit = publicUrlFromEnv('FILEBROWSER_PUBLIC_URL');
+  const explicit = publicUrlFromEnv('RCLONE_MANAGER_FILEBROWSER_PUBLIC_URL');
   if (explicit) return explicit;
 
-  const cloudflared = publicUrlFromEnv('CLOUDFLARED_TUNNEL_HOSTNAME_5');
+  const cloudflared = publicUrlFromEnv('RCLONE_MANAGER_CLOUDFLARED_TUNNEL_HOSTNAME_5');
   if (cloudflared) return cloudflared;
 
-  const domain = resolveEnvValue('DOMAIN').trim();
+  const domain = resolveEnvValue('RCLONE_MANAGER_DOMAIN').trim();
   return domain ? `https://files.${domain}` : '';
 }
 
@@ -128,16 +128,16 @@ function mountArgs(record, mountPath) {
     `${record.remoteName}:`,
     mountPath,
     '--vfs-cache-mode',
-    process.env.RCLONE_MOUNT_VFS_CACHE_MODE || 'writes',
+    process.env.RCLONE_MANAGER_RCLONE_MOUNT_VFS_CACHE_MODE || 'writes',
     '--dir-cache-time',
-    process.env.RCLONE_MOUNT_DIR_CACHE_TIME || '1m',
+    process.env.RCLONE_MANAGER_RCLONE_MOUNT_DIR_CACHE_TIME || '1m',
     '--poll-interval',
-    process.env.RCLONE_MOUNT_POLL_INTERVAL || '15s',
+    process.env.RCLONE_MANAGER_RCLONE_MOUNT_POLL_INTERVAL || '15s',
     '--umask',
-    process.env.RCLONE_MOUNT_UMASK || '002',
+    process.env.RCLONE_MANAGER_RCLONE_MOUNT_UMASK || '002',
   ];
 
-  if (process.env.RCLONE_MOUNT_ALLOW_OTHER !== '0') args.push('--allow-other');
+  if (process.env.RCLONE_MANAGER_RCLONE_MOUNT_ALLOW_OTHER !== '0') args.push('--allow-other');
   return args;
 }
 

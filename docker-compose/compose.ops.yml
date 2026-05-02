@@ -9,16 +9,16 @@
 #    webssh-windows — socat bridge to host ttyd (Windows runner)
 #
 #  Subdomain convention (auto-generated, no manual config):
-#    logs.${PROJECT_NAME}.${DOMAIN}
-#    files.${PROJECT_NAME}.${DOMAIN}
-#    ttyd.${PROJECT_NAME}.${DOMAIN}
+#    logs.${RCLONE_MANAGER_PROJECT_NAME}.${RCLONE_MANAGER_DOMAIN}
+#    files.${RCLONE_MANAGER_PROJECT_NAME}.${RCLONE_MANAGER_DOMAIN}
+#    ttyd.${RCLONE_MANAGER_PROJECT_NAME}.${RCLONE_MANAGER_DOMAIN}
 #
 #  Optional localhost ports for Tailscale/host access:
-#    DOZZLE_HOST_PORT=18080
-#    FILEBROWSER_HOST_PORT=18081
-#    WEBSSH_HOST_PORT=17681
+#    RCLONE_MANAGER_DOZZLE_HOST_PORT=18080
+#    RCLONE_MANAGER_FILEBROWSER_HOST_PORT=18081
+#    RCLONE_MANAGER_WEBSSH_HOST_PORT=17681
 #  Optional bind IP for direct Tailnet access by host ports:
-#    OPS_HOST_BIND_IP=0.0.0.0
+#    RCLONE_MANAGER_OPS_HOST_BIND_IP=0.0.0.0
 # ================================================================
 
 services:
@@ -28,19 +28,19 @@ services:
     image: amir20/dozzle:v10.3.3
     container_name: "dozzle"
     volumes:
-      - ${DOCKER_SOCK:-/var/run/docker.sock}:/var/run/docker.sock:ro
+      - ${RCLONE_MANAGER_DOCKER_SOCK:-/var/run/docker.sock}:/var/run/docker.sock:ro
     environment:
       DOZZLE_NO_ANALYTICS: "true"
     ports:
-      - "${OPS_HOST_BIND_IP:-127.0.0.1}:${DOZZLE_HOST_PORT:-18080}:8080"
+      - "${RCLONE_MANAGER_OPS_HOST_BIND_IP:-127.0.0.1}:${RCLONE_MANAGER_DOZZLE_HOST_PORT:-18080}:8080"
     labels:
-      - "caddy=http://logs.${PROJECT_NAME}.${DOMAIN}, http://logs.${DOMAIN}, http://dozzle.${DOMAIN}"
+      - "caddy=http://logs.${RCLONE_MANAGER_PROJECT_NAME}.${RCLONE_MANAGER_DOMAIN}, http://logs.${RCLONE_MANAGER_DOMAIN}, http://dozzle.${RCLONE_MANAGER_DOMAIN}"
       - "caddy.reverse_proxy={{upstreams 8080}}"
       # Lỗi aborting with incomplete response với SSE (text/event-stream) qua Caddy reverse proxy
       #   — cần thêm flush_interval -1 để Caddy không buffer response mà stream thẳng về client.
       - "caddy.reverse_proxy.flush_interval=-1" # ← thêm dòng này
       - "caddy.basic_auth="
-      - "caddy.basic_auth.${CADDY_AUTH_USER:-admin}=${CADDY_AUTH_HASH}"
+      - "caddy.basic_auth.${RCLONE_MANAGER_CADDY_AUTH_USER:-admin}=${RCLONE_MANAGER_CADDY_AUTH_HASH}"
     networks: [app_net]
     restart: unless-stopped
 
@@ -51,22 +51,22 @@ services:
     container_name: "filebrowser"
     command: --noauth --port 80 --root /srv --database /database/filebrowser.db
     ports:
-      - "${OPS_HOST_BIND_IP:-127.0.0.1}:${FILEBROWSER_HOST_PORT:-18081}:80"
+      - "${RCLONE_MANAGER_OPS_HOST_BIND_IP:-127.0.0.1}:${RCLONE_MANAGER_FILEBROWSER_HOST_PORT:-18081}:80"
     volumes:
       - .:/srv/workspace # browse all project files
       - type: bind
-        source: ${DOCKER_VOLUMES_ROOT:-./.docker-volumes}
+        source: ${RCLONE_MANAGER_DOCKER_VOLUMES_ROOT:-./.docker-volumes}
         target: /srv/docker-volumes
         bind:
           propagation: rshared
         # rclone mounts are created under this root and edited through Filebrowser.
       - ./logs:/srv/logs:ro # optional direct logs shortcut
-      - ${DOCKER_VOLUMES_ROOT:-./.docker-volumes}/filebrowser/database:/database
+      - ${RCLONE_MANAGER_DOCKER_VOLUMES_ROOT:-./.docker-volumes}/filebrowser/database:/database
     labels:
-      - "caddy=http://files.${PROJECT_NAME}.${DOMAIN}, http://files.${DOMAIN}"
+      - "caddy=http://files.${RCLONE_MANAGER_PROJECT_NAME}.${RCLONE_MANAGER_DOMAIN}, http://files.${RCLONE_MANAGER_DOMAIN}"
       - "caddy.reverse_proxy={{upstreams 80}}"
       - "caddy.basic_auth="
-      - "caddy.basic_auth.${CADDY_AUTH_USER:-admin}=${CADDY_AUTH_HASH}"
+      - "caddy.basic_auth.${RCLONE_MANAGER_CADDY_AUTH_USER:-admin}=${RCLONE_MANAGER_CADDY_AUTH_HASH}"
     networks: [app_net]
     restart: unless-stopped
 
@@ -88,19 +88,19 @@ services:
       - "-o"
       - "ConnectTimeout=10"
       - "-t"
-      - "${CUR_WHOAMI:-runner}@host.docker.internal"
-      - "cd ${CUR_WORK_DIR:-/home/runner} && exec ${SHELL:-/bin/bash}"
+      - "${RCLONE_MANAGER_CUR_WHOAMI:-runner}@host.docker.internal"
+      - "cd ${RCLONE_MANAGER_CUR_WORK_DIR:-/home/runner} && exec ${RCLONE_MANAGER_SHELL:-/bin/bash}"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
-      - "${OPS_HOST_BIND_IP:-127.0.0.1}:${WEBSSH_HOST_PORT:-17681}:7681"
+      - "${RCLONE_MANAGER_OPS_HOST_BIND_IP:-127.0.0.1}:${RCLONE_MANAGER_WEBSSH_HOST_PORT:-17681}:7681"
     volumes:
       - ./services/webssh/.ssh:/root/.ssh:ro
     labels:
-      - "caddy=http://ttyd.${PROJECT_NAME}.${DOMAIN}, http://ttyd.${DOMAIN}"
+      - "caddy=http://ttyd.${RCLONE_MANAGER_PROJECT_NAME}.${RCLONE_MANAGER_DOMAIN}, http://ttyd.${RCLONE_MANAGER_DOMAIN}"
       - "caddy.reverse_proxy={{upstreams 7681}}"
       - "caddy.basic_auth="
-      - "caddy.basic_auth.${CADDY_AUTH_USER:-admin}=${CADDY_AUTH_HASH}"
+      - "caddy.basic_auth.${RCLONE_MANAGER_CADDY_AUTH_USER:-admin}=${RCLONE_MANAGER_CADDY_AUTH_HASH}"
     networks: [app_net]
     restart: unless-stopped
 
@@ -115,11 +115,11 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
-      - "${OPS_HOST_BIND_IP:-127.0.0.1}:${WEBSSH_HOST_PORT:-17681}:7681"
+      - "${RCLONE_MANAGER_OPS_HOST_BIND_IP:-127.0.0.1}:${RCLONE_MANAGER_WEBSSH_HOST_PORT:-17681}:7681"
     labels:
-      - "caddy=http://ttyd.${PROJECT_NAME}.${DOMAIN}"
+      - "caddy=http://ttyd.${RCLONE_MANAGER_PROJECT_NAME}.${RCLONE_MANAGER_DOMAIN}"
       - "caddy.reverse_proxy={{upstreams 7681}}"
       - "caddy.basic_auth="
-      - "caddy.basic_auth.${CADDY_AUTH_USER:-admin}=${CADDY_AUTH_HASH}"
+      - "caddy.basic_auth.${RCLONE_MANAGER_CADDY_AUTH_USER:-admin}=${RCLONE_MANAGER_CADDY_AUTH_HASH}"
     networks: [app_net]
     restart: unless-stopped
