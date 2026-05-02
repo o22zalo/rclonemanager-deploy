@@ -1,6 +1,6 @@
 # rclone Manager backend: credential presets
 
-@baseUrl = http://127.0.0.1:{{$dotenv RCLONE_MANAGER_APP_HOST_PORT}}
+@baseUrl = http://127.0.0.1:{{$dotenv APP_HOST_PORT}}
 @apiKey = {{$dotenv RCLONE_MANAGER_BACKEND_API_KEY}}
 
 ###

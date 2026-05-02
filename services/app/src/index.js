@@ -14,7 +14,7 @@ dotenv.config();
 dotenv.config({ path: path.resolve(__dirname, '..', '..', '..', '.env') });
 
 const app = express();
-const port = Number(process.env.RCLONE_MANAGER_PORT || process.env.RCLONE_MANAGER_APP_PORT || 53682);
+const port = Number(process.env.RCLONE_MANAGER_PORT || process.env.PORT || process.env.APP_PORT || 53682);
 const publicDir = path.join(__dirname, '..', 'public');
 
 function envFlag(name, fallback = false) {
@@ -37,9 +37,9 @@ function publicUrlFromEnv(name) {
 
 function opsLinks() {
   return [
-    { key: 'ttyd', label: 'ttyd', url: publicUrlFromEnv('RCLONE_MANAGER_CLOUDFLARED_TUNNEL_HOSTNAME_3') },
-    { key: 'dozzle', label: 'dozzle', url: publicUrlFromEnv('RCLONE_MANAGER_CLOUDFLARED_TUNNEL_HOSTNAME_4') },
-    { key: 'files', label: 'files', url: publicUrlFromEnv('RCLONE_MANAGER_CLOUDFLARED_TUNNEL_HOSTNAME_5') },
+    { key: 'ttyd', label: 'ttyd', url: publicUrlFromEnv('CLOUDFLARED_TUNNEL_HOSTNAME_3') },
+    { key: 'dozzle', label: 'dozzle', url: publicUrlFromEnv('CLOUDFLARED_TUNNEL_HOSTNAME_4') },
+    { key: 'files', label: 'files', url: publicUrlFromEnv('CLOUDFLARED_TUNNEL_HOSTNAME_5') },
   ].filter((link) => link.url);
 }
 

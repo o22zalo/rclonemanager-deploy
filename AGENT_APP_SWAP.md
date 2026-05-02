@@ -19,9 +19,9 @@ Replace only the application layer while preserving Core/Ops/Access logic.
 1. Service name stays `app`.
 2. `app` stays on `app_net`.
 3. Env-based Caddy labels stay env-based (no hard-coded domains/secrets).
-4. `RCLONE_MANAGER_APP_PORT` remains the source of truth for container port.
+4. `APP_PORT` remains the source of truth for container port.
 5. Healthcheck remains present for app.
-6. Persistent data uses `${RCLONE_MANAGER_DOCKER_VOLUMES_ROOT:-./.docker-volumes}/...`.
+6. Persistent data uses `${DOCKER_VOLUMES_ROOT:-./.docker-volumes}/...`.
 7. Core/Ops/Access behavior must not be changed unless explicitly requested.
 
 ## 3) Default Editable Files
@@ -189,142 +189,142 @@ Use this snapshot as direct editing context.
 # ================================================================
 
 # Project name: used as docker project/network prefix + subdomain base + tailscale hostname
-RCLONE_MANAGER_PROJECT_NAME=myapp
+PROJECT_NAME=myapp
 
 # Root domain — no http://, no trailing slash
-RCLONE_MANAGER_DOMAIN=${RCLONE_MANAGER_PROJECT_NAME}.dpdns.org# ================================================================
+DOMAIN=${PROJECT_NAME}.dpdns.org# ================================================================
 #  CI / REMOTE ENV — Used by pipeline sync and stop-listener scripts
 # ================================================================
-RCLONE_MANAGER_DOTENVRTDB_ROOT_URL=https://your-project-default-rtdb.region.firebasedatabase.app/env.json?auth=replace-me
-RCLONE_MANAGER_DOTENVRTDB_SECRET=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-RCLONE_MANAGER_DOTENVRTDB_PATH_URL=demo
+DOTENVRTDB_ROOT_URL=https://your-project-default-rtdb.region.firebasedatabase.app/env.json?auth=replace-me
+DOTENVRTDB_SECRET=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+DOTENVRTDB_PATH_URL=demo
 
-RCLONE_MANAGER_DOTENVRTDB_URL=${RCLONE_MANAGER_DOTENVRTDB_ROOT_URL}/${RCLONE_MANAGER_DOTENVRTDB_PATH_URL}.json?auth=${RCLONE_MANAGER_DOTENVRTDB_SECRET}
-RCLONE_MANAGER_STOP_LISTENER_ENABLED=true
-RCLONE_MANAGER_STOP_FIREBASE_URL=${RCLONE_MANAGER_DOTENVRTDB_ROOT_URL}/${RCLONE_MANAGER_DOTENVRTDB_PATH_URL}-stop-id.json?auth=${RCLONE_MANAGER_DOTENVRTDB_SECRET}
+DOTENVRTDB_URL=${DOTENVRTDB_ROOT_URL}/${DOTENVRTDB_PATH_URL}.json?auth=${DOTENVRTDB_SECRET}
+STOP_LISTENER_ENABLED=true
+STOP_FIREBASE_URL=${DOTENVRTDB_ROOT_URL}/${DOTENVRTDB_PATH_URL}-stop-id.json?auth=${DOTENVRTDB_SECRET}
 # Firebase Realtime Database URL used to store both:
 # - state key  (tailscaled.state backup)
 # - certs key  (/var/lib/tailscale/certs backup)
-RCLONE_MANAGER_TAILSCALE_KEEP_IP_FIREBASE_URL=${RCLONE_MANAGER_DOTENVRTDB_ROOT_URL}/${RCLONE_MANAGER_DOTENVRTDB_PATH_URL}-tailscale-keep-ip.json?auth=${RCLONE_MANAGER_DOTENVRTDB_SECRET}
+TAILSCALE_KEEP_IP_FIREBASE_URL=${DOTENVRTDB_ROOT_URL}/${DOTENVRTDB_PATH_URL}-tailscale-keep-ip.json?auth=${DOTENVRTDB_SECRET}
 
 # ================================================================
 #  CADDY AUTH — Basic Auth protects routes by default
 # ================================================================
 # Basic auth username
-RCLONE_MANAGER_CADDY_AUTH_USER=admin
+CADDY_AUTH_USER=admin
 # Generate with:
 #   docker run --rm caddy:alpine caddy hash-password --plaintext "YourPassword"
-RCLONE_MANAGER_CADDY_AUTH_HASH='$2a$14$replace-this-with-a-real-bcrypt-hash-value000000000000'
+CADDY_AUTH_HASH='$2a$14$replace-this-with-a-real-bcrypt-hash-value000000000000'
 # Email for Caddy SSL via Let's Encrypt
-RCLONE_MANAGER_CADDY_EMAIL=${RCLONE_MANAGER_CADDY_AUTH_USER}@${RCLONE_MANAGER_DOMAIN}
+CADDY_EMAIL=${CADDY_AUTH_USER}@${DOMAIN}
 
 # ================================================================
 #  APPLICATION — Change these per deployment
 # ================================================================
 
 # Docker image to run as the main application
-RCLONE_MANAGER_APP_IMAGE=node:20-alpine
+APP_IMAGE=node:20-alpine
 
 # Port the app exposes inside the container
-RCLONE_MANAGER_APP_PORT=3000
+APP_PORT=3000
 
 # Localhost port published on the host machine
-RCLONE_MANAGER_APP_HOST_PORT=3000
+APP_HOST_PORT=3000
 
 # Optional health check path
-RCLONE_MANAGER_HEALTH_PATH=/health
+HEALTH_PATH=/health
 
 # Node.js / generic runtime env
-RCLONE_MANAGER_NODE_ENV=production
+NODE_ENV=production
 
 # Root host folder for all container runtime data (bind mounts)
-RCLONE_MANAGER_DOCKER_VOLUMES_ROOT=./.docker-volumes
+DOCKER_VOLUMES_ROOT=./.docker-volumes
 
 
 # ================================================================
 #  FEATURE FLAGS — Enable or disable optional services
 # ================================================================
-RCLONE_MANAGER_ENABLE_DOZZLE=true
-RCLONE_MANAGER_ENABLE_FILEBROWSER=true
-RCLONE_MANAGER_ENABLE_WEBSSH=true
-RCLONE_MANAGER_ENABLE_TAILSCALE=false
+ENABLE_DOZZLE=true
+ENABLE_FILEBROWSER=true
+ENABLE_WEBSSH=true
+ENABLE_TAILSCALE=false
 # ================================================================
 #  OPS PORTS — Dozzle/Filebrowser/WebSSH local + Tailnet access
 # ================================================================
 # Host ports for ops services (used by compose.ops.yml)
-RCLONE_MANAGER_DOZZLE_HOST_PORT=18080
-RCLONE_MANAGER_FILEBROWSER_HOST_PORT=18081
-RCLONE_MANAGER_WEBSSH_HOST_PORT=17681
+DOZZLE_HOST_PORT=18080
+FILEBROWSER_HOST_PORT=18081
+WEBSSH_HOST_PORT=17681
 # Bind IP for ops service ports:
 # - 127.0.0.1: localhost only (safe default)
 # - 0.0.0.0: allow direct access via Tailscale/LAN host IP
-RCLONE_MANAGER_OPS_HOST_BIND_IP=0.0.0.0
+OPS_HOST_BIND_IP=0.0.0.0
 
 # ================================================================
 #  CLOUDFLARE TUNNEL — Public ingress mapping
 # ================================================================
 
 # Tunnel name used by Cloudflare / sync tooling
-RCLONE_MANAGER_CLOUDFLARED_TUNNEL_NAME=${RCLONE_MANAGER_PROJECT_NAME}-tunnel-name
+CLOUDFLARED_TUNNEL_NAME=${PROJECT_NAME}-tunnel-name
 
 # Public hostnames exposed through the tunnel
-RCLONE_MANAGER_CLOUDFLARED_TUNNEL_HOSTNAME_1=${RCLONE_MANAGER_DOMAIN}
-RCLONE_MANAGER_CLOUDFLARED_TUNNEL_HOSTNAME_2=main.${RCLONE_MANAGER_DOMAIN}
-RCLONE_MANAGER_CLOUDFLARED_TUNNEL_HOSTNAME_3=ttyd.${RCLONE_MANAGER_DOMAIN}
-RCLONE_MANAGER_CLOUDFLARED_TUNNEL_HOSTNAME_4=dozzle.${RCLONE_MANAGER_DOMAIN}
-RCLONE_MANAGER_CLOUDFLARED_TUNNEL_HOSTNAME_5=files.${RCLONE_MANAGER_DOMAIN}
+CLOUDFLARED_TUNNEL_HOSTNAME_1=${DOMAIN}
+CLOUDFLARED_TUNNEL_HOSTNAME_2=main.${DOMAIN}
+CLOUDFLARED_TUNNEL_HOSTNAME_3=ttyd.${DOMAIN}
+CLOUDFLARED_TUNNEL_HOSTNAME_4=dozzle.${DOMAIN}
+CLOUDFLARED_TUNNEL_HOSTNAME_5=files.${DOMAIN}
 
 # Internal services behind each hostname
-RCLONE_MANAGER_CLOUDFLARED_TUNNEL_SERVICE_1=http://caddy:80
-RCLONE_MANAGER_CLOUDFLARED_TUNNEL_SERVICE_2=http://caddy:80
-RCLONE_MANAGER_CLOUDFLARED_TUNNEL_SERVICE_3=http://caddy:80
-RCLONE_MANAGER_CLOUDFLARED_TUNNEL_SERVICE_4=http://caddy:80
-RCLONE_MANAGER_CLOUDFLARED_TUNNEL_SERVICE_5=http://caddy:80
+CLOUDFLARED_TUNNEL_SERVICE_1=http://caddy:80
+CLOUDFLARED_TUNNEL_SERVICE_2=http://caddy:80
+CLOUDFLARED_TUNNEL_SERVICE_3=http://caddy:80
+CLOUDFLARED_TUNNEL_SERVICE_4=http://caddy:80
+CLOUDFLARED_TUNNEL_SERVICE_5=http://caddy:80
 
 # CI sync value for cloudflared/credentials.json
-RCLONE_MANAGER_CLOUDFLARED_TUNNEL_CREDENTIALS_BASE64=file:base64:./cloudflared/credentials.json
+CLOUDFLARED_TUNNEL_CREDENTIALS_BASE64=file:base64:./cloudflared/credentials.json
 
 # ================================================================
-#  TAILSCALE — Only required if RCLONE_MANAGER_ENABLE_TAILSCALE=true
+#  TAILSCALE — Only required if ENABLE_TAILSCALE=true
 # ================================================================
 
 # Optional: OAuth client ID for tailscale/tailscale-init.js
 # Get from: https://login.tailscale.com/admin/settings/keys (Trust credentials)
 # If using tailscale-init / keep-ip OAuth flow, set:
-#   RCLONE_MANAGER_TAILSCALE_CLIENTID=<OAuth client ID>
-#   RCLONE_MANAGER_TAILSCALE_AUTHKEY=<OAuth client secret, tskey-client-...>
-RCLONE_MANAGER_TAILSCALE_CLIENTID=kFhHFn4CBE11CNTRL
+#   TAILSCALE_CLIENTID=<OAuth client ID>
+#   TAILSCALE_AUTHKEY=<OAuth client secret, tskey-client-...>
+TAILSCALE_CLIENTID=kFhHFn4CBE11CNTRL
 # Get from: https://login.tailscale.com/admin/settings/keys
 # Use Reusable + Ephemeral for CI runners.
 # Auth key used by tailscale container to join tailnet and by scripts to request access token.
-RCLONE_MANAGER_TAILSCALE_AUTHKEY=tskey-client-xxxxxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TAILSCALE_AUTHKEY=tskey-client-xxxxxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # ACL tags for this node, example: tag:ci,tag:container
-RCLONE_MANAGER_TAILSCALE_TAGS=tag:container
+TAILSCALE_TAGS=tag:container
 # Owners used when tailscale-init creates missing tagOwners
-RCLONE_MANAGER_TAILSCALE_TAG_OWNERS=autogroup:admin
+TAILSCALE_TAG_OWNERS=autogroup:admin
 # Tailnet DNS suffix from Tailscale admin → DNS page
-RCLONE_MANAGER_TAILSCALE_TAILNET_DOMAIN=your-tailnet.ts.net
+TAILSCALE_TAILNET_DOMAIN=your-tailnet.ts.net
 # Used to auto-generate tailscale/serve.json (TS_SERVE_CONFIG) for Tailscale HTTPS.
 # Optional: tailnet identifier used by tailscale-init API calls (default: -)
-RCLONE_MANAGER_TAILSCALE_TS_TAILNET=-
+TAILSCALE_TS_TAILNET=-
 # Optional: output path for generated serve config
-RCLONE_MANAGER_TAILSCALE_SERVE_JSON_PATH=./tailscale/serve.json
+TAILSCALE_SERVE_JSON_PATH=./tailscale/serve.json
 # Optional: local upstream for Tailscale Serve proxy
-RCLONE_MANAGER_TAILSCALE_SERVE_PROXY=http://127.0.0.1:80
+TAILSCALE_SERVE_PROXY=http://127.0.0.1:80
 # Keep same Tailscale identity/IP across restart by backing up tailscaled.state
 # true  = enable backup/restore + remove existing hostname before start
 # false = disable this behavior
-RCLONE_MANAGER_TAILSCALE_KEEP_IP_ENABLE=false
-# Optional: remove existing device(s) matching RCLONE_MANAGER_PROJECT_NAME before start
-# If this var is missing/empty, runtime falls back to RCLONE_MANAGER_TAILSCALE_KEEP_IP_ENABLE.
+TAILSCALE_KEEP_IP_ENABLE=false
+# Optional: remove existing device(s) matching PROJECT_NAME before start
+# If this var is missing/empty, runtime falls back to TAILSCALE_KEEP_IP_ENABLE.
 # Set true to remove hostname even when KEEP_IP is false.
-RCLONE_MANAGER_TAILSCALE_KEEP_IP_REMOVE_HOSTNAME_ENABLE=false
+TAILSCALE_KEEP_IP_REMOVE_HOSTNAME_ENABLE=false
 # Optional certs directory override (default: /var/lib/tailscale/certs)
-RCLONE_MANAGER_TAILSCALE_KEEP_IP_CERTS_DIR=/var/lib/tailscale/certs
+TAILSCALE_KEEP_IP_CERTS_DIR=/var/lib/tailscale/certs
 # Optional backup interval for keep-ip sidecar (seconds)
-RCLONE_MANAGER_TAILSCALE_KEEP_IP_INTERVAL_SEC=30
+TAILSCALE_KEEP_IP_INTERVAL_SEC=30
 # Optional: local ACL JSON/HuJSON file to merge missing tagOwners
-RCLONE_MANAGER_TAILSCALE_ACL_JSON_PATH=./tailscale/acl.sample.hujson
+TAILSCALE_ACL_JSON_PATH=./tailscale/acl.sample.hujson
 
 
 
@@ -333,12 +333,12 @@ RCLONE_MANAGER_TAILSCALE_ACL_JSON_PATH=./tailscale/acl.sample.hujson
 #  RUNTIME — Auto-set by CI scripts. Do NOT edit manually.
 # ================================================================
 
-# RCLONE_MANAGER_CUR_OS=linux
-# RCLONE_MANAGER_DOCKER_SOCK=/var/run/docker.sock
-# RCLONE_MANAGER_COMPOSE_PROJECT_NAME=docker-stack-template
-# RCLONE_MANAGER_CUR_WHOAMI=runner
-# RCLONE_MANAGER_CUR_WORK_DIR=/home/runner/work
-# RCLONE_MANAGER_WSL_WORKSPACE=/mnt/c/path/to/workspace
+# CUR_OS=linux
+# DOCKER_SOCK=/var/run/docker.sock
+# COMPOSE_PROJECT_NAME=docker-stack-template
+# CUR_WHOAMI=runner
+# CUR_WORK_DIR=/home/runner/work
+# WSL_WORKSPACE=/mnt/c/path/to/workspace
 ```
 
 ### `compose.apps.yml`
@@ -347,38 +347,38 @@ RCLONE_MANAGER_TAILSCALE_ACL_JSON_PATH=./tailscale/acl.sample.hujson
 #  compose.apps.yml — Application Layer
 #  Builds the bundled sample app from ./services/app
 #
-#  Subdomain: ${RCLONE_MANAGER_PROJECT_NAME}.${RCLONE_MANAGER_DOMAIN}
+#  Subdomain: ${PROJECT_NAME}.${DOMAIN}
 #
 #  Minimal required env:
-#    RCLONE_MANAGER_APP_PORT   — Port app listens on inside container
-#    RCLONE_MANAGER_PROJECT_NAME, RCLONE_MANAGER_DOMAIN, RCLONE_MANAGER_CADDY_AUTH_USER, RCLONE_MANAGER_CADDY_AUTH_HASH
+#    APP_PORT   — Port app listens on inside container
+#    PROJECT_NAME, DOMAIN, CADDY_AUTH_USER, CADDY_AUTH_HASH
 # ================================================================
 
 services:
   app:
-    image: "${RCLONE_MANAGER_PROJECT_NAME:-myapp}-app:local"
+    image: "${PROJECT_NAME:-myapp}-app:local"
     build:
       context: ./services/app
       dockerfile: Dockerfile
     environment:
-      RCLONE_MANAGER_NODE_ENV: "${RCLONE_MANAGER_NODE_ENV:-production}"
-      RCLONE_MANAGER_PORT: "${RCLONE_MANAGER_APP_PORT:-3000}"
+      NODE_ENV: "${NODE_ENV:-production}"
+      RCLONE_MANAGER_PORT: "${APP_PORT:-3000}"
     ports:
-      - "127.0.0.1:${RCLONE_MANAGER_APP_HOST_PORT:-3000}:${RCLONE_MANAGER_APP_PORT:-3000}"
+      - "127.0.0.1:${APP_HOST_PORT:-3000}:${APP_PORT:-3000}"
     volumes:
-      - ${RCLONE_MANAGER_DOCKER_VOLUMES_ROOT:-./.docker-volumes}/app/logs:/app/logs
+      - ${DOCKER_VOLUMES_ROOT:-./.docker-volumes}/app/logs:/app/logs
     labels:
       # Public HTTP sites behind Cloudflare Tunnel.
-      - "caddy=http://${RCLONE_MANAGER_PROJECT_NAME}.${RCLONE_MANAGER_DOMAIN}, http://main.${RCLONE_MANAGER_DOMAIN}, http://${RCLONE_MANAGER_DOMAIN}, http://${RCLONE_MANAGER_PROJECT_NAME}.${RCLONE_MANAGER_TAILSCALE_TAILNET_DOMAIN}"
-      - "caddy.reverse_proxy={{upstreams ${RCLONE_MANAGER_APP_PORT:-3000}}}"
+      - "caddy=http://${PROJECT_NAME}.${DOMAIN}, http://main.${DOMAIN}, http://${DOMAIN}, http://${PROJECT_NAME}.${TAILSCALE_TAILNET_DOMAIN}"
+      - "caddy.reverse_proxy={{upstreams ${APP_PORT:-3000}}}"
       - "caddy.basic_auth=/*"
-      - "caddy.basic_auth.${RCLONE_MANAGER_CADDY_AUTH_USER:-admin}=${RCLONE_MANAGER_CADDY_AUTH_HASH}"
+      - "caddy.basic_auth.${CADDY_AUTH_USER:-admin}=${CADDY_AUTH_HASH}"
       # Internal HTTPS site for Tailscale / trusted LAN access.
-      - "caddy_1=https://${RCLONE_MANAGER_PROJECT_NAME:-myapp}.${RCLONE_MANAGER_TAILSCALE_TAILNET_DOMAIN:-tailnet.local}"
+      - "caddy_1=https://${PROJECT_NAME:-myapp}.${TAILSCALE_TAILNET_DOMAIN:-tailnet.local}"
       - "caddy_1.tls=internal"
-      - "caddy_1.reverse_proxy={{upstreams ${RCLONE_MANAGER_APP_PORT:-3000}}}"
+      - "caddy_1.reverse_proxy={{upstreams ${APP_PORT:-3000}}}"
       - "caddy_1.basic_auth=/*"
-      - "caddy_1.basic_auth.${RCLONE_MANAGER_CADDY_AUTH_USER:-admin}=${RCLONE_MANAGER_CADDY_AUTH_HASH}"
+      - "caddy_1.basic_auth.${CADDY_AUTH_USER:-admin}=${CADDY_AUTH_HASH}"
     networks: [app_net]
     restart: unless-stopped
     healthcheck:
@@ -386,7 +386,7 @@ services:
         - "CMD"
         - "sh"
         - "-c"
-        - "wget -qO- http://localhost:${RCLONE_MANAGER_APP_PORT:-3000}${RCLONE_MANAGER_HEALTH_PATH:-/health} || exit 1"
+        - "wget -qO- http://localhost:${APP_PORT:-3000}${HEALTH_PATH:-/health} || exit 1"
       interval: 30s
       timeout: 5s
       retries: 3
@@ -400,14 +400,14 @@ services:
 #  Always included: reverse proxy (Caddy) + tunnel (Cloudflare)
 #
 #  Required env:
-#    RCLONE_MANAGER_PROJECT_NAME, RCLONE_MANAGER_DOMAIN, RCLONE_MANAGER_CADDY_EMAIL, RCLONE_MANAGER_CADDY_AUTH_USER,
-#    RCLONE_MANAGER_CADDY_AUTH_HASH, CF_TUNNEL_TOKEN (or credentials file)
+#    PROJECT_NAME, DOMAIN, CADDY_EMAIL, CADDY_AUTH_USER,
+#    CADDY_AUTH_HASH, CF_TUNNEL_TOKEN (or credentials file)
 # ================================================================
 
 networks:
   # Defined once here for the whole merged stack; overlay files join it by name.
   app_net:
-    name: ${RCLONE_MANAGER_PROJECT_NAME:-myapp}_net
+    name: ${PROJECT_NAME:-myapp}_net
 
 services:
   # ── Caddy: auto reverse proxy via Docker labels ────────────────
@@ -416,13 +416,13 @@ services:
     ports:
       - "80:80"
     volumes:
-      - ${RCLONE_MANAGER_DOCKER_SOCK:-/var/run/docker.sock}:/var/run/docker.sock:ro
-      - ${RCLONE_MANAGER_DOCKER_VOLUMES_ROOT:-./.docker-volumes}/caddy/data:/data
-      - ${RCLONE_MANAGER_DOCKER_VOLUMES_ROOT:-./.docker-volumes}/caddy/config:/config
+      - ${DOCKER_SOCK:-/var/run/docker.sock}:/var/run/docker.sock:ro
+      - ${DOCKER_VOLUMES_ROOT:-./.docker-volumes}/caddy/data:/data
+      - ${DOCKER_VOLUMES_ROOT:-./.docker-volumes}/caddy/config:/config
     environment:
-      CADDY_INGRESS_NETWORKS: ${RCLONE_MANAGER_PROJECT_NAME:-myapp}_net
+      CADDY_INGRESS_NETWORKS: ${PROJECT_NAME:-myapp}_net
     labels:
-      caddy.email: "${RCLONE_MANAGER_CADDY_EMAIL}"
+      caddy.email: "${CADDY_EMAIL}"
       caddy.auto_https: "disable_redirects"
     networks: [app_net]
     restart: unless-stopped
@@ -460,16 +460,16 @@ services:
 #    webssh-windows — socat bridge to host ttyd (Windows runner)
 #
 #  Subdomain convention (auto-generated, no manual config):
-#    logs.${RCLONE_MANAGER_PROJECT_NAME}.${RCLONE_MANAGER_DOMAIN}
-#    files.${RCLONE_MANAGER_PROJECT_NAME}.${RCLONE_MANAGER_DOMAIN}
-#    ttyd.${RCLONE_MANAGER_PROJECT_NAME}.${RCLONE_MANAGER_DOMAIN}
+#    logs.${PROJECT_NAME}.${DOMAIN}
+#    files.${PROJECT_NAME}.${DOMAIN}
+#    ttyd.${PROJECT_NAME}.${DOMAIN}
 #
 #  Optional localhost ports for Tailscale/host access:
-#    RCLONE_MANAGER_DOZZLE_HOST_PORT=18080
-#    RCLONE_MANAGER_FILEBROWSER_HOST_PORT=18081
-#    RCLONE_MANAGER_WEBSSH_HOST_PORT=17681
+#    DOZZLE_HOST_PORT=18080
+#    FILEBROWSER_HOST_PORT=18081
+#    WEBSSH_HOST_PORT=17681
 #  Optional bind IP for direct Tailnet access by host ports:
-#    RCLONE_MANAGER_OPS_HOST_BIND_IP=0.0.0.0
+#    OPS_HOST_BIND_IP=0.0.0.0
 # ================================================================
 
 services:
@@ -478,16 +478,16 @@ services:
     profiles: [dozzle]
     image: amir20/dozzle:latest
     volumes:
-      - ${RCLONE_MANAGER_DOCKER_SOCK:-/var/run/docker.sock}:/var/run/docker.sock:ro
+      - ${DOCKER_SOCK:-/var/run/docker.sock}:/var/run/docker.sock:ro
     environment:
       DOZZLE_NO_ANALYTICS: "true"
     ports:
-      - "${RCLONE_MANAGER_OPS_HOST_BIND_IP:-127.0.0.1}:${RCLONE_MANAGER_DOZZLE_HOST_PORT:-18080}:8080"
+      - "${OPS_HOST_BIND_IP:-127.0.0.1}:${DOZZLE_HOST_PORT:-18080}:8080"
     labels:
-      - "caddy=http://logs.${RCLONE_MANAGER_PROJECT_NAME}.${RCLONE_MANAGER_DOMAIN}, http://logs.${RCLONE_MANAGER_DOMAIN}, http://dozzle.${RCLONE_MANAGER_DOMAIN}"
+      - "caddy=http://logs.${PROJECT_NAME}.${DOMAIN}, http://logs.${DOMAIN}, http://dozzle.${DOMAIN}"
       - "caddy.reverse_proxy={{upstreams 8080}}"
       - "caddy.basic_auth=/*"
-      - "caddy.basic_auth.${RCLONE_MANAGER_CADDY_AUTH_USER:-admin}=${RCLONE_MANAGER_CADDY_AUTH_HASH}"
+      - "caddy.basic_auth.${CADDY_AUTH_USER:-admin}=${CADDY_AUTH_HASH}"
     networks: [app_net]
     restart: unless-stopped
 
@@ -497,17 +497,17 @@ services:
     image: filebrowser/filebrowser:v2.30.0
     command: --noauth --port 80 --root /srv --database /database/filebrowser.db
     ports:
-      - "${RCLONE_MANAGER_OPS_HOST_BIND_IP:-127.0.0.1}:${RCLONE_MANAGER_FILEBROWSER_HOST_PORT:-18081}:80"
+      - "${OPS_HOST_BIND_IP:-127.0.0.1}:${FILEBROWSER_HOST_PORT:-18081}:80"
     volumes:
       - .:/srv/workspace # browse all project files
-      - ${RCLONE_MANAGER_DOCKER_VOLUMES_ROOT:-./.docker-volumes}:/srv/docker-volumes:ro # all runtime data of services
+      - ${DOCKER_VOLUMES_ROOT:-./.docker-volumes}:/srv/docker-volumes:ro # all runtime data of services
       - ./logs:/srv/logs:ro # optional direct logs shortcut
-      - ${RCLONE_MANAGER_DOCKER_VOLUMES_ROOT:-./.docker-volumes}/filebrowser/database:/database
+      - ${DOCKER_VOLUMES_ROOT:-./.docker-volumes}/filebrowser/database:/database
     labels:
-      - "caddy=http://files.${RCLONE_MANAGER_PROJECT_NAME}.${RCLONE_MANAGER_DOMAIN}, http://files.${RCLONE_MANAGER_DOMAIN}"
+      - "caddy=http://files.${PROJECT_NAME}.${DOMAIN}, http://files.${DOMAIN}"
       - "caddy.reverse_proxy={{upstreams 80}}"
       - "caddy.basic_auth=/*"
-      - "caddy.basic_auth.${RCLONE_MANAGER_CADDY_AUTH_USER:-admin}=${RCLONE_MANAGER_CADDY_AUTH_HASH}"
+      - "caddy.basic_auth.${CADDY_AUTH_USER:-admin}=${CADDY_AUTH_HASH}"
     networks: [app_net]
     restart: unless-stopped
 
@@ -528,19 +528,19 @@ services:
       - "-o"
       - "ConnectTimeout=10"
       - "-t"
-      - "${RCLONE_MANAGER_CUR_WHOAMI:-runner}@host.docker.internal"
-      - "cd ${RCLONE_MANAGER_CUR_WORK_DIR:-/home/runner} && exec ${RCLONE_MANAGER_SHELL:-/bin/bash}"
+      - "${CUR_WHOAMI:-runner}@host.docker.internal"
+      - "cd ${CUR_WORK_DIR:-/home/runner} && exec ${SHELL:-/bin/bash}"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
-      - "${RCLONE_MANAGER_OPS_HOST_BIND_IP:-127.0.0.1}:${RCLONE_MANAGER_WEBSSH_HOST_PORT:-17681}:7681"
+      - "${OPS_HOST_BIND_IP:-127.0.0.1}:${WEBSSH_HOST_PORT:-17681}:7681"
     volumes:
       - ./services/webssh/.ssh:/root/.ssh:ro
     labels:
-      - "caddy=http://ttyd.${RCLONE_MANAGER_PROJECT_NAME}.${RCLONE_MANAGER_DOMAIN}, http://ttyd.${RCLONE_MANAGER_DOMAIN}"
+      - "caddy=http://ttyd.${PROJECT_NAME}.${DOMAIN}, http://ttyd.${DOMAIN}"
       - "caddy.reverse_proxy={{upstreams 7681}}"
       - "caddy.basic_auth=/*"
-      - "caddy.basic_auth.${RCLONE_MANAGER_CADDY_AUTH_USER:-admin}=${RCLONE_MANAGER_CADDY_AUTH_HASH}"
+      - "caddy.basic_auth.${CADDY_AUTH_USER:-admin}=${CADDY_AUTH_HASH}"
     networks: [app_net]
     restart: unless-stopped
 
@@ -554,12 +554,12 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
-      - "${RCLONE_MANAGER_OPS_HOST_BIND_IP:-127.0.0.1}:${RCLONE_MANAGER_WEBSSH_HOST_PORT:-17681}:7681"
+      - "${OPS_HOST_BIND_IP:-127.0.0.1}:${WEBSSH_HOST_PORT:-17681}:7681"
     labels:
-      - "caddy=http://ttyd.${RCLONE_MANAGER_PROJECT_NAME}.${RCLONE_MANAGER_DOMAIN}"
+      - "caddy=http://ttyd.${PROJECT_NAME}.${DOMAIN}"
       - "caddy.reverse_proxy={{upstreams 7681}}"
       - "caddy.basic_auth=/*"
-      - "caddy.basic_auth.${RCLONE_MANAGER_CADDY_AUTH_USER:-admin}=${RCLONE_MANAGER_CADDY_AUTH_HASH}"
+      - "caddy.basic_auth.${CADDY_AUTH_USER:-admin}=${CADDY_AUTH_HASH}"
     networks: [app_net]
     restart: unless-stopped
 ```
@@ -574,13 +574,13 @@ services:
 #    tailscale-linux   — kernel TUN mode (full features, Linux host)
 #    tailscale-windows — userspace mode (Windows/WSL2 host)
 #
-#  Required env (when RCLONE_MANAGER_ENABLE_TAILSCALE=true):
-#    RCLONE_MANAGER_TAILSCALE_AUTHKEY, RCLONE_MANAGER_TAILSCALE_TAGS
+#  Required env (when ENABLE_TAILSCALE=true):
+#    TAILSCALE_AUTHKEY, TAILSCALE_TAGS
 #  Optional keep-ip env:
-#    RCLONE_MANAGER_TAILSCALE_KEEP_IP_ENABLE, RCLONE_MANAGER_TAILSCALE_KEEP_IP_FIREBASE_URL (state+certs),
-#    RCLONE_MANAGER_TAILSCALE_KEEP_IP_CERTS_DIR, RCLONE_MANAGER_TAILSCALE_KEEP_IP_REMOVE_HOSTNAME_ENABLE,
-#    RCLONE_MANAGER_TAILSCALE_KEEP_IP_INTERVAL_SEC,
-#    RCLONE_MANAGER_TAILSCALE_CLIENTID
+#    TAILSCALE_KEEP_IP_ENABLE, TAILSCALE_KEEP_IP_FIREBASE_URL (state+certs),
+#    TAILSCALE_KEEP_IP_CERTS_DIR, TAILSCALE_KEEP_IP_REMOVE_HOSTNAME_ENABLE,
+#    TAILSCALE_KEEP_IP_INTERVAL_SEC,
+#    TAILSCALE_CLIENTID
 # ================================================================
 
 services:
@@ -590,18 +590,18 @@ services:
     image: node:20-alpine
     command: ["node", "/workspace/tailscale/tailscale-keep-ip.js", "prepare"]
     environment:
-      RCLONE_MANAGER_TAILSCALE_KEEP_IP_ENABLE: "${RCLONE_MANAGER_TAILSCALE_KEEP_IP_ENABLE:-false}"
-      RCLONE_MANAGER_TAILSCALE_KEEP_IP_REMOVE_HOSTNAME_ENABLE: "${RCLONE_MANAGER_TAILSCALE_KEEP_IP_REMOVE_HOSTNAME_ENABLE:-}"
-      RCLONE_MANAGER_TAILSCALE_KEEP_IP_FIREBASE_URL: "${RCLONE_MANAGER_TAILSCALE_KEEP_IP_FIREBASE_URL:-}"
-      RCLONE_MANAGER_TAILSCALE_KEEP_IP_STATE_FILE: /var/lib/tailscale/tailscaled.state
-      RCLONE_MANAGER_TAILSCALE_KEEP_IP_CERTS_DIR: "${RCLONE_MANAGER_TAILSCALE_KEEP_IP_CERTS_DIR:-/var/lib/tailscale/certs}"
-      RCLONE_MANAGER_PROJECT_NAME: "${RCLONE_MANAGER_PROJECT_NAME:-myapp}"
-      RCLONE_MANAGER_TAILSCALE_TS_TAILNET: "${RCLONE_MANAGER_TAILSCALE_TS_TAILNET:--}"
-      RCLONE_MANAGER_TAILSCALE_AUTHKEY: "${RCLONE_MANAGER_TAILSCALE_AUTHKEY:-}"
-      RCLONE_MANAGER_TAILSCALE_CLIENTID: "${RCLONE_MANAGER_TAILSCALE_CLIENTID:-}"
+      TAILSCALE_KEEP_IP_ENABLE: "${TAILSCALE_KEEP_IP_ENABLE:-false}"
+      TAILSCALE_KEEP_IP_REMOVE_HOSTNAME_ENABLE: "${TAILSCALE_KEEP_IP_REMOVE_HOSTNAME_ENABLE:-}"
+      TAILSCALE_KEEP_IP_FIREBASE_URL: "${TAILSCALE_KEEP_IP_FIREBASE_URL:-}"
+      TAILSCALE_KEEP_IP_STATE_FILE: /var/lib/tailscale/tailscaled.state
+      TAILSCALE_KEEP_IP_CERTS_DIR: "${TAILSCALE_KEEP_IP_CERTS_DIR:-/var/lib/tailscale/certs}"
+      PROJECT_NAME: "${PROJECT_NAME:-myapp}"
+      TAILSCALE_TS_TAILNET: "${TAILSCALE_TS_TAILNET:--}"
+      TAILSCALE_AUTHKEY: "${TAILSCALE_AUTHKEY:-}"
+      TAILSCALE_CLIENTID: "${TAILSCALE_CLIENTID:-}"
     user: "0:0"
     volumes:
-      - ${RCLONE_MANAGER_DOCKER_VOLUMES_ROOT:-./.docker-volumes}/tailscale/var-lib:/var/lib/tailscale
+      - ${DOCKER_VOLUMES_ROOT:-./.docker-volumes}/tailscale/var-lib:/var/lib/tailscale
       - ./tailscale:/workspace/tailscale:ro
     networks: [app_net]
     restart: "no"
@@ -612,18 +612,18 @@ services:
     image: node:20-alpine
     command: ["node", "/workspace/tailscale/tailscale-keep-ip.js", "prepare"]
     environment:
-      RCLONE_MANAGER_TAILSCALE_KEEP_IP_ENABLE: "${RCLONE_MANAGER_TAILSCALE_KEEP_IP_ENABLE:-false}"
-      RCLONE_MANAGER_TAILSCALE_KEEP_IP_REMOVE_HOSTNAME_ENABLE: "${RCLONE_MANAGER_TAILSCALE_KEEP_IP_REMOVE_HOSTNAME_ENABLE:-}"
-      RCLONE_MANAGER_TAILSCALE_KEEP_IP_FIREBASE_URL: "${RCLONE_MANAGER_TAILSCALE_KEEP_IP_FIREBASE_URL:-}"
-      RCLONE_MANAGER_TAILSCALE_KEEP_IP_STATE_FILE: /var/lib/tailscale/tailscaled.state
-      RCLONE_MANAGER_TAILSCALE_KEEP_IP_CERTS_DIR: "${RCLONE_MANAGER_TAILSCALE_KEEP_IP_CERTS_DIR:-/var/lib/tailscale/certs}"
-      RCLONE_MANAGER_PROJECT_NAME: "${RCLONE_MANAGER_PROJECT_NAME:-myapp}"
-      RCLONE_MANAGER_TAILSCALE_TS_TAILNET: "${RCLONE_MANAGER_TAILSCALE_TS_TAILNET:--}"
-      RCLONE_MANAGER_TAILSCALE_AUTHKEY: "${RCLONE_MANAGER_TAILSCALE_AUTHKEY:-}"
-      RCLONE_MANAGER_TAILSCALE_CLIENTID: "${RCLONE_MANAGER_TAILSCALE_CLIENTID:-}"
+      TAILSCALE_KEEP_IP_ENABLE: "${TAILSCALE_KEEP_IP_ENABLE:-false}"
+      TAILSCALE_KEEP_IP_REMOVE_HOSTNAME_ENABLE: "${TAILSCALE_KEEP_IP_REMOVE_HOSTNAME_ENABLE:-}"
+      TAILSCALE_KEEP_IP_FIREBASE_URL: "${TAILSCALE_KEEP_IP_FIREBASE_URL:-}"
+      TAILSCALE_KEEP_IP_STATE_FILE: /var/lib/tailscale/tailscaled.state
+      TAILSCALE_KEEP_IP_CERTS_DIR: "${TAILSCALE_KEEP_IP_CERTS_DIR:-/var/lib/tailscale/certs}"
+      PROJECT_NAME: "${PROJECT_NAME:-myapp}"
+      TAILSCALE_TS_TAILNET: "${TAILSCALE_TS_TAILNET:--}"
+      TAILSCALE_AUTHKEY: "${TAILSCALE_AUTHKEY:-}"
+      TAILSCALE_CLIENTID: "${TAILSCALE_CLIENTID:-}"
     user: "0:0"
     volumes:
-      - ${RCLONE_MANAGER_DOCKER_VOLUMES_ROOT:-./.docker-volumes}/tailscale/var-lib:/var/lib/tailscale
+      - ${DOCKER_VOLUMES_ROOT:-./.docker-volumes}/tailscale/var-lib:/var/lib/tailscale
       - ./tailscale:/workspace/tailscale:ro
     networks: [app_net]
     restart: "no"
@@ -632,21 +632,21 @@ services:
   tailscale-linux:
     profiles: [tailscale-linux]
     image: tailscale/tailscale:stable
-    hostname: ${RCLONE_MANAGER_PROJECT_NAME:-myapp}
+    hostname: ${PROJECT_NAME:-myapp}
     depends_on:
       tailscale-keep-ip-prepare-linux:
         condition: service_completed_successfully
     environment:
-      TS_AUTHKEY: "${RCLONE_MANAGER_TAILSCALE_AUTHKEY:-}"
+      TS_AUTHKEY: "${TAILSCALE_AUTHKEY:-}"
       TS_USERSPACE: "false"
       TS_SERVE_CONFIG: /config/serve/serve.json
       TS_EXTRA_ARGS: >-
-        --advertise-tags=${RCLONE_MANAGER_TAILSCALE_TAGS:-tag:container}
+        --advertise-tags=${TAILSCALE_TAGS:-tag:container}
         --accept-dns=true
         --accept-routes
       TS_STATE_DIR: /var/lib/tailscale
     volumes:
-      - ${RCLONE_MANAGER_DOCKER_VOLUMES_ROOT:-./.docker-volumes}/tailscale/var-lib:/var/lib/tailscale
+      - ${DOCKER_VOLUMES_ROOT:-./.docker-volumes}/tailscale/var-lib:/var/lib/tailscale
       - ./tailscale:/config/serve
       - /dev/net/tun:/dev/net/tun
     cap_add:
@@ -659,20 +659,20 @@ services:
   tailscale-windows:
     profiles: [tailscale-windows]
     image: tailscale/tailscale:stable
-    hostname: ${RCLONE_MANAGER_PROJECT_NAME:-myapp}
+    hostname: ${PROJECT_NAME:-myapp}
     depends_on:
       tailscale-keep-ip-prepare-windows:
         condition: service_completed_successfully
     environment:
-      RCLONE_MANAGER_TAILSCALE_AUTHKEY: "${RCLONE_MANAGER_TAILSCALE_AUTHKEY:-}"
+      TAILSCALE_AUTHKEY: "${TAILSCALE_AUTHKEY:-}"
       TS_USERSPACE: "true"
       TS_SERVE_CONFIG: /config/serve/serve.json
       TS_EXTRA_ARGS: >-
-        --advertise-tags=${RCLONE_MANAGER_TAILSCALE_TAGS:-tag:container}
+        --advertise-tags=${TAILSCALE_TAGS:-tag:container}
         --accept-dns=true
       TS_STATE_DIR: /var/lib/tailscale
     volumes:
-      - ${RCLONE_MANAGER_DOCKER_VOLUMES_ROOT:-./.docker-volumes}/tailscale/var-lib:/var/lib/tailscale
+      - ${DOCKER_VOLUMES_ROOT:-./.docker-volumes}/tailscale/var-lib:/var/lib/tailscale
       - ./tailscale:/config/serve
     networks: [app_net]
     restart: unless-stopped
@@ -686,16 +686,16 @@ services:
         condition: service_started
     command: ["node", "/workspace/tailscale/tailscale-keep-ip.js", "backup-loop"]
     environment:
-      RCLONE_MANAGER_TAILSCALE_KEEP_IP_ENABLE: "${RCLONE_MANAGER_TAILSCALE_KEEP_IP_ENABLE:-false}"
-      RCLONE_MANAGER_TAILSCALE_KEEP_IP_FIREBASE_URL: "${RCLONE_MANAGER_TAILSCALE_KEEP_IP_FIREBASE_URL:-}"
-      RCLONE_MANAGER_TAILSCALE_KEEP_IP_STATE_FILE: /var/lib/tailscale/tailscaled.state
-      RCLONE_MANAGER_TAILSCALE_KEEP_IP_CERTS_DIR: "${RCLONE_MANAGER_TAILSCALE_KEEP_IP_CERTS_DIR:-/var/lib/tailscale/certs}"
-      RCLONE_MANAGER_TAILSCALE_KEEP_IP_INTERVAL_SEC: "${RCLONE_MANAGER_TAILSCALE_KEEP_IP_INTERVAL_SEC:-30}"
-      RCLONE_MANAGER_PROJECT_NAME: "${RCLONE_MANAGER_PROJECT_NAME:-myapp}"
-      RCLONE_MANAGER_TAILSCALE_TS_TAILNET: "${RCLONE_MANAGER_TAILSCALE_TS_TAILNET:--}"
+      TAILSCALE_KEEP_IP_ENABLE: "${TAILSCALE_KEEP_IP_ENABLE:-false}"
+      TAILSCALE_KEEP_IP_FIREBASE_URL: "${TAILSCALE_KEEP_IP_FIREBASE_URL:-}"
+      TAILSCALE_KEEP_IP_STATE_FILE: /var/lib/tailscale/tailscaled.state
+      TAILSCALE_KEEP_IP_CERTS_DIR: "${TAILSCALE_KEEP_IP_CERTS_DIR:-/var/lib/tailscale/certs}"
+      TAILSCALE_KEEP_IP_INTERVAL_SEC: "${TAILSCALE_KEEP_IP_INTERVAL_SEC:-30}"
+      PROJECT_NAME: "${PROJECT_NAME:-myapp}"
+      TAILSCALE_TS_TAILNET: "${TAILSCALE_TS_TAILNET:--}"
     user: "0:0"
     volumes:
-      - ${RCLONE_MANAGER_DOCKER_VOLUMES_ROOT:-./.docker-volumes}/tailscale/var-lib:/var/lib/tailscale
+      - ${DOCKER_VOLUMES_ROOT:-./.docker-volumes}/tailscale/var-lib:/var/lib/tailscale
       - ./tailscale:/workspace/tailscale:ro
     networks: [app_net]
     restart: unless-stopped
@@ -709,16 +709,16 @@ services:
         condition: service_started
     command: ["node", "/workspace/tailscale/tailscale-keep-ip.js", "backup-loop"]
     environment:
-      RCLONE_MANAGER_TAILSCALE_KEEP_IP_ENABLE: "${RCLONE_MANAGER_TAILSCALE_KEEP_IP_ENABLE:-false}"
-      RCLONE_MANAGER_TAILSCALE_KEEP_IP_FIREBASE_URL: "${RCLONE_MANAGER_TAILSCALE_KEEP_IP_FIREBASE_URL:-}"
-      RCLONE_MANAGER_TAILSCALE_KEEP_IP_STATE_FILE: /var/lib/tailscale/tailscaled.state
-      RCLONE_MANAGER_TAILSCALE_KEEP_IP_CERTS_DIR: "${RCLONE_MANAGER_TAILSCALE_KEEP_IP_CERTS_DIR:-/var/lib/tailscale/certs}"
-      RCLONE_MANAGER_TAILSCALE_KEEP_IP_INTERVAL_SEC: "${RCLONE_MANAGER_TAILSCALE_KEEP_IP_INTERVAL_SEC:-30}"
-      RCLONE_MANAGER_PROJECT_NAME: "${RCLONE_MANAGER_PROJECT_NAME:-myapp}"
-      RCLONE_MANAGER_TAILSCALE_TS_TAILNET: "${RCLONE_MANAGER_TAILSCALE_TS_TAILNET:--}"
+      TAILSCALE_KEEP_IP_ENABLE: "${TAILSCALE_KEEP_IP_ENABLE:-false}"
+      TAILSCALE_KEEP_IP_FIREBASE_URL: "${TAILSCALE_KEEP_IP_FIREBASE_URL:-}"
+      TAILSCALE_KEEP_IP_STATE_FILE: /var/lib/tailscale/tailscaled.state
+      TAILSCALE_KEEP_IP_CERTS_DIR: "${TAILSCALE_KEEP_IP_CERTS_DIR:-/var/lib/tailscale/certs}"
+      TAILSCALE_KEEP_IP_INTERVAL_SEC: "${TAILSCALE_KEEP_IP_INTERVAL_SEC:-30}"
+      PROJECT_NAME: "${PROJECT_NAME:-myapp}"
+      TAILSCALE_TS_TAILNET: "${TAILSCALE_TS_TAILNET:--}"
     user: "0:0"
     volumes:
-      - ${RCLONE_MANAGER_DOCKER_VOLUMES_ROOT:-./.docker-volumes}/tailscale/var-lib:/var/lib/tailscale
+      - ${DOCKER_VOLUMES_ROOT:-./.docker-volumes}/tailscale/var-lib:/var/lib/tailscale
       - ./tailscale:/workspace/tailscale:ro
     networks: [app_net]
     restart: unless-stopped
@@ -806,7 +806,7 @@ resolve_host_path() {
 
 prepare_docker_volume_dirs() {
   local volume_root
-  volume_root="$(resolve_host_path "${RCLONE_MANAGER_DOCKER_VOLUMES_ROOT:-./.docker-volumes}")"
+  volume_root="$(resolve_host_path "${DOCKER_VOLUMES_ROOT:-./.docker-volumes}")"
 
   mkdir -p \
     "$volume_root/app/logs" \
@@ -815,7 +815,7 @@ prepare_docker_volume_dirs() {
     "$volume_root/filebrowser/database" \
     "$volume_root/tailscale/var-lib"
 
-  if [ "${RCLONE_MANAGER_DC_VERBOSE:-0}" = "1" ]; then
+  if [ "${DC_VERBOSE:-0}" = "1" ]; then
     echo "  DATA_ROOT : $volume_root"
   fi
 }
@@ -828,9 +828,9 @@ else
 fi
 
 # Normalize tags to comma-separated form without spaces.
-if [ -n "${RCLONE_MANAGER_TAILSCALE_TAGS:-}" ]; then
-  RCLONE_MANAGER_TAILSCALE_TAGS="$(printf '%s' "$RCLONE_MANAGER_TAILSCALE_TAGS" | tr -d '[:space:]')"
-  export RCLONE_MANAGER_TAILSCALE_TAGS
+if [ -n "${TAILSCALE_TAGS:-}" ]; then
+  TAILSCALE_TAGS="$(printf '%s' "$TAILSCALE_TAGS" | tr -d '[:space:]')"
+  export TAILSCALE_TAGS
 fi
 
 should_render_tailscale_serve() {
@@ -846,18 +846,18 @@ should_render_tailscale_serve() {
 
 render_tailscale_serve_config() {
   local tailnet_domain app_port serve_dir serve_file serve_hostname
-  tailnet_domain="$(trim "${RCLONE_MANAGER_TAILSCALE_TAILNET_DOMAIN:-}")"
-  app_port="$(trim "${RCLONE_MANAGER_APP_PORT:-3000}")"
-  serve_hostname="${RCLONE_MANAGER_PROJECT_NAME:-myapp}.${tailnet_domain}"
+  tailnet_domain="$(trim "${TAILSCALE_TAILNET_DOMAIN:-}")"
+  app_port="$(trim "${APP_PORT:-3000}")"
+  serve_hostname="${PROJECT_NAME:-myapp}.${tailnet_domain}"
 
   if [ -z "$tailnet_domain" ] || [ "$tailnet_domain" = "-" ]; then
-    echo "❌ RCLONE_MANAGER_ENABLE_TAILSCALE=true nhưng RCLONE_MANAGER_TAILSCALE_TAILNET_DOMAIN chưa có giá trị hợp lệ." >&2
-    echo "   Chạy: npm run tailscale-init (hoặc điền RCLONE_MANAGER_TAILSCALE_TAILNET_DOMAIN trong .env)." >&2
+    echo "❌ ENABLE_TAILSCALE=true nhưng TAILSCALE_TAILNET_DOMAIN chưa có giá trị hợp lệ." >&2
+    echo "   Chạy: npm run tailscale-init (hoặc điền TAILSCALE_TAILNET_DOMAIN trong .env)." >&2
     exit 1
   fi
 
   if ! [[ "$app_port" =~ ^[0-9]+$ ]] || [ "$app_port" -lt 1 ] || [ "$app_port" -gt 65535 ]; then
-    echo "❌ RCLONE_MANAGER_APP_PORT không hợp lệ: $app_port" >&2
+    echo "❌ APP_PORT không hợp lệ: $app_port" >&2
     exit 1
   fi
 
@@ -883,7 +883,7 @@ render_tailscale_serve_config() {
 }
 EOF
 
-  if [ "${RCLONE_MANAGER_DC_VERBOSE:-0}" = "1" ]; then
+  if [ "${DC_VERBOSE:-0}" = "1" ]; then
     echo "  TS_SERVE  : $serve_file (${serve_hostname} -> 127.0.0.1:80)"
   fi
 }
@@ -897,21 +897,21 @@ if echo "$UNAME_R" | grep -qi "microsoft\|wsl"; then
 elif [ "$UNAME_S" = "Darwin" ]; then
   _OS="macos"
 else
-  _OS="${RCLONE_MANAGER_CUR_OS:-linux}"
+  _OS="${CUR_OS:-linux}"
 fi
 
 # ── Build --profile arguments from ENABLE_* flags ──────────────
 PROFILE_ARGS=()
 
-if [ "${RCLONE_MANAGER_ENABLE_DOZZLE:-true}" = "true" ]; then
+if [ "${ENABLE_DOZZLE:-true}" = "true" ]; then
   PROFILE_ARGS+=(--profile dozzle)
 fi
 
-if [ "${RCLONE_MANAGER_ENABLE_FILEBROWSER:-true}" = "true" ]; then
+if [ "${ENABLE_FILEBROWSER:-true}" = "true" ]; then
   PROFILE_ARGS+=(--profile filebrowser)
 fi
 
-if [ "${RCLONE_MANAGER_ENABLE_WEBSSH:-true}" = "true" ]; then
+if [ "${ENABLE_WEBSSH:-true}" = "true" ]; then
   if [ "$_OS" = "windows" ]; then
     PROFILE_ARGS+=(--profile webssh-windows)
   else
@@ -919,7 +919,7 @@ if [ "${RCLONE_MANAGER_ENABLE_WEBSSH:-true}" = "true" ]; then
   fi
 fi
 
-if [ "${RCLONE_MANAGER_ENABLE_TAILSCALE:-false}" = "true" ]; then
+if [ "${ENABLE_TAILSCALE:-false}" = "true" ]; then
   if [ "$_OS" = "windows" ]; then
     PROFILE_ARGS+=(--profile tailscale-windows)
   else
@@ -927,7 +927,7 @@ if [ "${RCLONE_MANAGER_ENABLE_TAILSCALE:-false}" = "true" ]; then
   fi
 fi
 
-if [ "${RCLONE_MANAGER_ENABLE_TAILSCALE:-false}" = "true" ] && should_render_tailscale_serve "${1:-}"; then
+if [ "${ENABLE_TAILSCALE:-false}" = "true" ] && should_render_tailscale_serve "${1:-}"; then
   render_tailscale_serve_config
 fi
 
@@ -941,12 +941,12 @@ FILES=(
   -f "$ROOT_DIR/compose.apps.yml"
 )
 
-# ── Debug info (set RCLONE_MANAGER_DC_VERBOSE=1 to show) ─────────────────────
-if [ "${RCLONE_MANAGER_DC_VERBOSE:-0}" = "1" ]; then
+# ── Debug info (set DC_VERBOSE=1 to show) ─────────────────────
+if [ "${DC_VERBOSE:-0}" = "1" ]; then
   echo "── dc.sh debug ──────────────────────────────────"
   echo "  OS        : $_OS"
-  echo "  PROJECT   : ${RCLONE_MANAGER_PROJECT_NAME:-?}"
-  echo "  RCLONE_MANAGER_DOMAIN    : ${RCLONE_MANAGER_DOMAIN:-?}"
+  echo "  PROJECT   : ${PROJECT_NAME:-?}"
+  echo "  DOMAIN    : ${DOMAIN:-?}"
   echo "  PROFILES  : ${PROFILE_ARGS[*]:-<none>}"
   echo "  FILES     : ${FILES[*]}"
   echo "─────────────────────────────────────────────────"
@@ -956,7 +956,7 @@ fi
 exec docker compose \
   "${FILES[@]}" \
   --project-directory "$ROOT_DIR" \
-  --project-name "${RCLONE_MANAGER_PROJECT_NAME:-myapp}" \
+  --project-name "${PROJECT_NAME:-myapp}" \
   "${PROFILE_ARGS[@]}" \
   "$@"
 ```
@@ -1072,29 +1072,29 @@ function buildAppHost(project, domain) {
 }
 
 // 1) Required core env from compose files
-checkRequired("RCLONE_MANAGER_PROJECT_NAME", "docker project/network + subdomain prefix", (v) =>
+checkRequired("PROJECT_NAME", "docker project/network + subdomain prefix", (v) =>
   /^[a-z0-9][a-z0-9-]*$/.test(v) ? null : "only lowercase letters, numbers, hyphen"
 );
-checkRequired("RCLONE_MANAGER_DOMAIN", "root domain", isValidDomain);
-checkRequired("RCLONE_MANAGER_CADDY_EMAIL", "caddy email label", (v) => (v.includes("@") ? null : "invalid email"));
-checkRequired("RCLONE_MANAGER_CADDY_AUTH_USER", "basic auth username");
-checkRequired("RCLONE_MANAGER_CADDY_AUTH_HASH", "basic auth bcrypt hash", (v) => {
+checkRequired("DOMAIN", "root domain", isValidDomain);
+checkRequired("CADDY_EMAIL", "caddy email label", (v) => (v.includes("@") ? null : "invalid email"));
+checkRequired("CADDY_AUTH_USER", "basic auth username");
+checkRequired("CADDY_AUTH_HASH", "basic auth bcrypt hash", (v) => {
   const raw = v.replace(/\$\$/g, "$");
   return raw.startsWith("$2a$") || raw.startsWith("$2b$") ? null : "must be bcrypt hash ($2a$/$2b$...)";
 });
-checkPort("RCLONE_MANAGER_APP_PORT", true);
+checkPort("APP_PORT", true);
 
 // 2) Optional env from compose files
-checkPort("RCLONE_MANAGER_APP_HOST_PORT", false);
-checkPort("RCLONE_MANAGER_DOZZLE_HOST_PORT", false);
-checkPort("RCLONE_MANAGER_FILEBROWSER_HOST_PORT", false);
-checkPort("RCLONE_MANAGER_WEBSSH_HOST_PORT", false);
-checkOptional("RCLONE_MANAGER_NODE_ENV", "app runtime env");
-checkOptional("RCLONE_MANAGER_HEALTH_PATH", "health endpoint path", (v) => (v.startsWith("/") ? null : "must start with '/'"));
-checkOptional("RCLONE_MANAGER_DOCKER_SOCK", "docker socket path override");
+checkPort("APP_HOST_PORT", false);
+checkPort("DOZZLE_HOST_PORT", false);
+checkPort("FILEBROWSER_HOST_PORT", false);
+checkPort("WEBSSH_HOST_PORT", false);
+checkOptional("NODE_ENV", "app runtime env");
+checkOptional("HEALTH_PATH", "health endpoint path", (v) => (v.startsWith("/") ? null : "must start with '/'"));
+checkOptional("DOCKER_SOCK", "docker socket path override");
 
 // 3) Flags
-for (const key of ["RCLONE_MANAGER_ENABLE_DOZZLE", "RCLONE_MANAGER_ENABLE_FILEBROWSER", "RCLONE_MANAGER_ENABLE_WEBSSH", "RCLONE_MANAGER_ENABLE_TAILSCALE"]) {
+for (const key of ["ENABLE_DOZZLE", "ENABLE_FILEBROWSER", "ENABLE_WEBSSH", "ENABLE_TAILSCALE"]) {
   const v = env[key];
   if (!v) {
     warnings.push(`${key} not set -> using default from scripts/compose`);
@@ -1113,78 +1113,78 @@ if (!fs.existsSync(cfCreds)) errors.push("cloudflared/credentials.json missing (
 else ok.push("cloudflared/credentials.json present");
 
 // 5) Optional webssh runtime tuning vars
-if ((env.RCLONE_MANAGER_ENABLE_WEBSSH || "true") === "true") {
-  if (!env.RCLONE_MANAGER_CUR_WHOAMI) warnings.push("RCLONE_MANAGER_CUR_WHOAMI optional (webssh linux default runner)");
-  if (!env.RCLONE_MANAGER_CUR_WORK_DIR) warnings.push("RCLONE_MANAGER_CUR_WORK_DIR optional (webssh linux default /home/runner)");
-  if (!env.RCLONE_MANAGER_SHELL) warnings.push("RCLONE_MANAGER_SHELL optional (webssh linux default /bin/bash)");
+if ((env.ENABLE_WEBSSH || "true") === "true") {
+  if (!env.CUR_WHOAMI) warnings.push("CUR_WHOAMI optional (webssh linux default runner)");
+  if (!env.CUR_WORK_DIR) warnings.push("CUR_WORK_DIR optional (webssh linux default /home/runner)");
+  if (!env.SHELL) warnings.push("SHELL optional (webssh linux default /bin/bash)");
 }
 
 // 6) Tailscale + keep-ip rules based on compose.access.yml
-if (env.RCLONE_MANAGER_ENABLE_TAILSCALE === "true") {
-  checkRequired("RCLONE_MANAGER_TAILSCALE_AUTHKEY", "required by tailscale service", (v) =>
+if (env.ENABLE_TAILSCALE === "true") {
+  checkRequired("TAILSCALE_AUTHKEY", "required by tailscale service", (v) =>
     v.startsWith("tskey-") ? null : "must start with tskey-"
   );
-  checkRequired("RCLONE_MANAGER_TAILSCALE_TAILNET_DOMAIN", "required by dc.sh to render tailscale/serve.json", (v) =>
+  checkRequired("TAILSCALE_TAILNET_DOMAIN", "required by dc.sh to render tailscale/serve.json", (v) =>
     v && v !== "-" ? null : "must not be empty or '-'"
   );
-  checkOptional("RCLONE_MANAGER_TAILSCALE_TAGS", "advertise tags", (v) =>
+  checkOptional("TAILSCALE_TAGS", "advertise tags", (v) =>
     /^tag:[A-Za-z0-9][A-Za-z0-9_-]*(,tag:[A-Za-z0-9][A-Za-z0-9_-]*)*$/.test(v)
       ? null
       : "format must be tag:a,tag:b"
   );
 
-  const keepIp = (env.RCLONE_MANAGER_TAILSCALE_KEEP_IP_ENABLE || "false").trim();
-  if (!isBool(keepIp)) errors.push("RCLONE_MANAGER_TAILSCALE_KEEP_IP_ENABLE must be true|false");
+  const keepIp = (env.TAILSCALE_KEEP_IP_ENABLE || "false").trim();
+  if (!isBool(keepIp)) errors.push("TAILSCALE_KEEP_IP_ENABLE must be true|false");
 
-  const keepRemove = (env.RCLONE_MANAGER_TAILSCALE_KEEP_IP_REMOVE_HOSTNAME_ENABLE || "").trim();
+  const keepRemove = (env.TAILSCALE_KEEP_IP_REMOVE_HOSTNAME_ENABLE || "").trim();
   if (keepRemove && !isBool(keepRemove)) {
-    errors.push("RCLONE_MANAGER_TAILSCALE_KEEP_IP_REMOVE_HOSTNAME_ENABLE must be true|false when provided");
+    errors.push("TAILSCALE_KEEP_IP_REMOVE_HOSTNAME_ENABLE must be true|false when provided");
   }
 
   if (keepIp === "true") {
-    checkRequired("RCLONE_MANAGER_TAILSCALE_KEEP_IP_FIREBASE_URL", "required when keep-ip enabled", (v) =>
+    checkRequired("TAILSCALE_KEEP_IP_FIREBASE_URL", "required when keep-ip enabled", (v) =>
       isValidHttpsJsonUrl(v) ? null : "must be https URL ending with .json"
     );
-    checkOptional("RCLONE_MANAGER_TAILSCALE_KEEP_IP_CERTS_DIR", "certs dir path");
-    checkOptional("RCLONE_MANAGER_TAILSCALE_KEEP_IP_INTERVAL_SEC", "backup interval seconds", (v) => {
+    checkOptional("TAILSCALE_KEEP_IP_CERTS_DIR", "certs dir path");
+    checkOptional("TAILSCALE_KEEP_IP_INTERVAL_SEC", "backup interval seconds", (v) => {
       const n = Number(v);
       return Number.isInteger(n) && n >= 5 ? null : "must be integer >= 5";
     });
   } else {
-    warnings.push("RCLONE_MANAGER_TAILSCALE_KEEP_IP_ENABLE=false -> keep-ip backup/restore disabled");
+    warnings.push("TAILSCALE_KEEP_IP_ENABLE=false -> keep-ip backup/restore disabled");
   }
 
   const removeHostnameEnabled = keepRemove ? keepRemove === "true" : keepIp === "true";
   if (removeHostnameEnabled) {
-    if (!env.RCLONE_MANAGER_TAILSCALE_CLIENTID) {
-      errors.push("remove-hostname enabled requires RCLONE_MANAGER_TAILSCALE_CLIENTID");
+    if (!env.TAILSCALE_CLIENTID) {
+      errors.push("remove-hostname enabled requires TAILSCALE_CLIENTID");
     }
-    const authKey = (env.RCLONE_MANAGER_TAILSCALE_AUTHKEY || "").trim();
+    const authKey = (env.TAILSCALE_AUTHKEY || "").trim();
     if (!authKey) {
-      errors.push("remove-hostname enabled requires RCLONE_MANAGER_TAILSCALE_AUTHKEY");
+      errors.push("remove-hostname enabled requires TAILSCALE_AUTHKEY");
     } else if (!authKey.startsWith("tskey-client-")) {
-      errors.push("remove-hostname requires RCLONE_MANAGER_TAILSCALE_AUTHKEY in tskey-client-* format");
+      errors.push("remove-hostname requires TAILSCALE_AUTHKEY in tskey-client-* format");
     }
   }
 }
 
-const project = env.RCLONE_MANAGER_PROJECT_NAME || "<project>";
-const domain = env.RCLONE_MANAGER_DOMAIN || "<domain>";
-const host = env.RCLONE_MANAGER_PROJECT_NAME || "myapp";
-const tailnet = env.RCLONE_MANAGER_TAILSCALE_TAILNET_DOMAIN || "tailnet.local";
+const project = env.PROJECT_NAME || "<project>";
+const domain = env.DOMAIN || "<domain>";
+const host = env.PROJECT_NAME || "myapp";
+const tailnet = env.TAILSCALE_TAILNET_DOMAIN || "tailnet.local";
 const appHost = buildAppHost(project, domain);
 ok.push(`subdomain preview: app=${appHost}`);
-if ((env.RCLONE_MANAGER_ENABLE_DOZZLE || "true") === "true") ok.push(`subdomain preview: logs=logs.${appHost}`);
-if ((env.RCLONE_MANAGER_ENABLE_FILEBROWSER || "true") === "true") ok.push(`subdomain preview: files=files.${appHost}`);
-if ((env.RCLONE_MANAGER_ENABLE_WEBSSH || "true") === "true") ok.push(`subdomain preview: ttyd=ttyd.${appHost}`);
-if (env.RCLONE_MANAGER_ENABLE_TAILSCALE === "true") {
-  const dozzlePort = env.RCLONE_MANAGER_DOZZLE_HOST_PORT || "18080";
-  const filesPort = env.RCLONE_MANAGER_FILEBROWSER_HOST_PORT || "18081";
-  const sshPort = env.RCLONE_MANAGER_WEBSSH_HOST_PORT || "17681";
+if ((env.ENABLE_DOZZLE || "true") === "true") ok.push(`subdomain preview: logs=logs.${appHost}`);
+if ((env.ENABLE_FILEBROWSER || "true") === "true") ok.push(`subdomain preview: files=files.${appHost}`);
+if ((env.ENABLE_WEBSSH || "true") === "true") ok.push(`subdomain preview: ttyd=ttyd.${appHost}`);
+if (env.ENABLE_TAILSCALE === "true") {
+  const dozzlePort = env.DOZZLE_HOST_PORT || "18080";
+  const filesPort = env.FILEBROWSER_HOST_PORT || "18081";
+  const sshPort = env.WEBSSH_HOST_PORT || "17681";
   ok.push(`tailnet host: https://${host}.${tailnet}`);
-  if ((env.RCLONE_MANAGER_ENABLE_DOZZLE || "true") === "true") ok.push(`tailnet dozzle: http://${host}.${tailnet}:${dozzlePort}`);
-  if ((env.RCLONE_MANAGER_ENABLE_FILEBROWSER || "true") === "true") ok.push(`tailnet filebrowser: http://${host}.${tailnet}:${filesPort}`);
-  if ((env.RCLONE_MANAGER_ENABLE_WEBSSH || "true") === "true") ok.push(`tailnet webssh: http://${host}.${tailnet}:${sshPort}`);
+  if ((env.ENABLE_DOZZLE || "true") === "true") ok.push(`tailnet dozzle: http://${host}.${tailnet}:${dozzlePort}`);
+  if ((env.ENABLE_FILEBROWSER || "true") === "true") ok.push(`tailnet filebrowser: http://${host}.${tailnet}:${filesPort}`);
+  if ((env.ENABLE_WEBSSH || "true") === "true") ok.push(`tailnet webssh: http://${host}.${tailnet}:${sshPort}`);
 }
 
 console.log("\n📋 ENV VALIDATION REPORT");

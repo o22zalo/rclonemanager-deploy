@@ -40,7 +40,7 @@ runs:
       if: runner.os == 'Windows'
       shell: pwsh
       run: |
-        $wsl = $env:RCLONE_MANAGER_WSL_WORKSPACE
+        $wsl = $env:WSL_WORKSPACE
         wsl -d Ubuntu -- bash -c "cd '$wsl' && bash docker-compose/scripts/dc.sh up -d --build --remove-orphans"
 
     # ── Step 6: Cleanup + keepalive ───────────────────────────
@@ -53,7 +53,7 @@ runs:
       if: runner.os == 'Windows'
       shell: pwsh
       run: |
-        $wsl = $env:RCLONE_MANAGER_WSL_WORKSPACE
+        $wsl = $env:WSL_WORKSPACE
         wsl -d Ubuntu -- bash -c "cd '$wsl' && sudo docker image prune -f"
 
     - name: dotenvrtdb runner keepalive
@@ -72,8 +72,8 @@ runs:
       if: always() && runner.os == 'Windows'
       shell: pwsh
       run: |
-        $wsl = $env:RCLONE_MANAGER_WSL_WORKSPACE
-        if (-not $wsl) { Write-Host "RCLONE_MANAGER_WSL_WORKSPACE not set, skipping"; exit 0 }
+        $wsl = $env:WSL_WORKSPACE
+        if (-not $wsl) { Write-Host "WSL_WORKSPACE not set, skipping"; exit 0 }
         wsl -d Ubuntu -- bash -c "cd '$wsl' && bash .github/scripts/collect-artifacts.sh"
 
     - name: Upload docker runtime artifacts

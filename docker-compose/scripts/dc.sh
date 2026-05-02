@@ -78,7 +78,7 @@ resolve_host_path() {
 
 prepare_docker_volume_dirs() {
   local volume_root
-  volume_root="$(resolve_host_path "${RCLONE_MANAGER_DOCKER_VOLUMES_ROOT:-./.docker-volumes}")"
+  volume_root="$(resolve_host_path "${DOCKER_VOLUMES_ROOT:-./.docker-volumes}")"
 
   mkdir -p \
     "$volume_root/app/logs" \
@@ -87,7 +87,7 @@ prepare_docker_volume_dirs() {
     "$volume_root/filebrowser/database" \
     "$volume_root/tailscale/var-lib"
 
-  if [ "${RCLONE_MANAGER_DC_VERBOSE:-0}" = "1" ]; then
+  if [ "${DC_VERBOSE:-0}" = "1" ]; then
     echo "  DATA_ROOT : $volume_root"
   fi
 }
@@ -100,9 +100,9 @@ else
 fi
 
 # Normalize tags to comma-separated form without spaces.
-if [ -n "${RCLONE_MANAGER_TAILSCALE_TAGS:-}" ]; then
-  RCLONE_MANAGER_TAILSCALE_TAGS="$(printf '%s' "$RCLONE_MANAGER_TAILSCALE_TAGS" | tr -d '[:space:]')"
-  export RCLONE_MANAGER_TAILSCALE_TAGS
+if [ -n "${TAILSCALE_TAGS:-}" ]; then
+  TAILSCALE_TAGS="$(printf '%s' "$TAILSCALE_TAGS" | tr -d '[:space:]')"
+  export TAILSCALE_TAGS
 fi
 
 should_render_tailscale_serve() {
@@ -118,18 +118,18 @@ should_render_tailscale_serve() {
 
 render_tailscale_serve_config() {
   local tailnet_domain app_port serve_dir serve_file serve_hostname
-  tailnet_domain="$(trim "${RCLONE_MANAGER_TAILSCALE_TAILNET_DOMAIN:-}")"
-  app_port="$(trim "${RCLONE_MANAGER_APP_PORT:-3000}")"
-  serve_hostname="${RCLONE_MANAGER_PROJECT_NAME:-myapp}.${tailnet_domain}"
+  tailnet_domain="$(trim "${TAILSCALE_TAILNET_DOMAIN:-}")"
+  app_port="$(trim "${APP_PORT:-3000}")"
+  serve_hostname="${PROJECT_NAME:-myapp}.${tailnet_domain}"
 
   if [ -z "$tailnet_domain" ] || [ "$tailnet_domain" = "-" ]; then
-    echo "❌ RCLONE_MANAGER_ENABLE_TAILSCALE=true nhưng RCLONE_MANAGER_TAILSCALE_TAILNET_DOMAIN chưa có giá trị hợp lệ." >&2
-    echo "   Chạy: npm run tailscale-init (hoặc điền RCLONE_MANAGER_TAILSCALE_TAILNET_DOMAIN trong .env)." >&2
+    echo "❌ ENABLE_TAILSCALE=true nhưng TAILSCALE_TAILNET_DOMAIN chưa có giá trị hợp lệ." >&2
+    echo "   Chạy: npm run tailscale-init (hoặc điền TAILSCALE_TAILNET_DOMAIN trong .env)." >&2
     exit 1
   fi
 
   if ! [[ "$app_port" =~ ^[0-9]+$ ]] || [ "$app_port" -lt 1 ] || [ "$app_port" -gt 65535 ]; then
-    echo "❌ RCLONE_MANAGER_APP_PORT không hợp lệ: $app_port" >&2
+    echo "❌ APP_PORT không hợp lệ: $app_port" >&2
     exit 1
   fi
 
@@ -155,7 +155,7 @@ render_tailscale_serve_config() {
 }
 EOF
 
-  if [ "${RCLONE_MANAGER_DC_VERBOSE:-0}" = "1" ]; then
+  if [ "${DC_VERBOSE:-0}" = "1" ]; then
     echo "  TS_SERVE  : $serve_file (${serve_hostname} -> 127.0.0.1:80)"
   fi
 }
@@ -169,21 +169,21 @@ if echo "$UNAME_R" | grep -qi "microsoft\|wsl"; then
 elif [ "$UNAME_S" = "Darwin" ]; then
   _OS="macos"
 else
-  _OS="${RCLONE_MANAGER_CUR_OS:-linux}"
+  _OS="${CUR_OS:-linux}"
 fi
 
 # ── Build --profile arguments from ENABLE_* flags ──────────────
 PROFILE_ARGS=()
 
-if [ "${RCLONE_MANAGER_ENABLE_DOZZLE:-true}" = "true" ]; then
+if [ "${ENABLE_DOZZLE:-true}" = "true" ]; then
   PROFILE_ARGS+=(--profile dozzle)
 fi
 
-if [ "${RCLONE_MANAGER_ENABLE_FILEBROWSER:-true}" = "true" ]; then
+if [ "${ENABLE_FILEBROWSER:-true}" = "true" ]; then
   PROFILE_ARGS+=(--profile filebrowser)
 fi
 
-if [ "${RCLONE_MANAGER_ENABLE_WEBSSH:-true}" = "true" ]; then
+if [ "${ENABLE_WEBSSH:-true}" = "true" ]; then
   if [ "$_OS" = "windows" ]; then
     PROFILE_ARGS+=(--profile webssh-windows)
   else
@@ -191,7 +191,7 @@ if [ "${RCLONE_MANAGER_ENABLE_WEBSSH:-true}" = "true" ]; then
   fi
 fi
 
-if [ "${RCLONE_MANAGER_ENABLE_TAILSCALE:-false}" = "true" ]; then
+if [ "${ENABLE_TAILSCALE:-false}" = "true" ]; then
   if [ "$_OS" = "windows" ]; then
     PROFILE_ARGS+=(--profile tailscale-windows)
   else
@@ -199,7 +199,7 @@ if [ "${RCLONE_MANAGER_ENABLE_TAILSCALE:-false}" = "true" ]; then
   fi
 fi
 
-if [ "${RCLONE_MANAGER_ENABLE_TAILSCALE:-false}" = "true" ] && should_render_tailscale_serve "${1:-}"; then
+if [ "${ENABLE_TAILSCALE:-false}" = "true" ] && should_render_tailscale_serve "${1:-}"; then
   render_tailscale_serve_config
 fi
 
@@ -213,12 +213,12 @@ FILES=(
   -f "$ROOT_DIR/compose.apps.yml"
 )
 
-# ── Debug info (set RCLONE_MANAGER_DC_VERBOSE=1 to show) ─────────────────────
-if [ "${RCLONE_MANAGER_DC_VERBOSE:-0}" = "1" ]; then
+# ── Debug info (set DC_VERBOSE=1 to show) ─────────────────────
+if [ "${DC_VERBOSE:-0}" = "1" ]; then
   echo "── dc.sh debug ──────────────────────────────────"
   echo "  OS        : $_OS"
-  echo "  PROJECT   : ${RCLONE_MANAGER_PROJECT_NAME:-?}"
-  echo "  RCLONE_MANAGER_DOMAIN    : ${RCLONE_MANAGER_DOMAIN:-?}"
+  echo "  PROJECT   : ${PROJECT_NAME:-?}"
+  echo "  DOMAIN    : ${DOMAIN:-?}"
   echo "  PROFILES  : ${PROFILE_ARGS[*]:-<none>}"
   echo "  FILES     : ${FILES[*]}"
   echo "─────────────────────────────────────────────────"
@@ -228,6 +228,6 @@ fi
 exec docker compose \
   "${FILES[@]}" \
   --project-directory "$ROOT_DIR" \
-  --project-name "${RCLONE_MANAGER_PROJECT_NAME:-myapp}" \
+  --project-name "${PROJECT_NAME:-myapp}" \
   "${PROFILE_ARGS[@]}" \
   "$@"

@@ -167,31 +167,31 @@ function buildAppHost(project, domain) {
 }
 
 // 1) Required core env from compose files
-checkRequired("RCLONE_MANAGER_PROJECT_NAME", "docker project/network + subdomain prefix", (v) =>
+checkRequired("PROJECT_NAME", "docker project/network + subdomain prefix", (v) =>
   /^[a-z0-9][a-z0-9-]*$/.test(v) ? null : "only lowercase letters, numbers, hyphen"
 );
-checkRequired("RCLONE_MANAGER_DOMAIN", "root domain", isValidDomain);
-checkRequired("RCLONE_MANAGER_CADDY_EMAIL", "caddy email label", (v) => (v.includes("@") ? null : "invalid email"));
-checkRequired("RCLONE_MANAGER_CADDY_AUTH_USER", "basic auth username");
-checkRequired("RCLONE_MANAGER_CADDY_AUTH_HASH", "basic auth bcrypt hash", (v) => {
+checkRequired("DOMAIN", "root domain", isValidDomain);
+checkRequired("CADDY_EMAIL", "caddy email label", (v) => (v.includes("@") ? null : "invalid email"));
+checkRequired("CADDY_AUTH_USER", "basic auth username");
+checkRequired("CADDY_AUTH_HASH", "basic auth bcrypt hash", (v) => {
   if (v.includes("$$")) {
     return "must not escape dollars as $$; use single quotes around the bcrypt hash";
   }
-  if (envMeta.RCLONE_MANAGER_CADDY_AUTH_HASH?.quote !== "'") {
-    return "wrap the bcrypt hash in single quotes, e.g. RCLONE_MANAGER_CADDY_AUTH_HASH='$2a$14$...'";
+  if (envMeta.CADDY_AUTH_HASH?.quote !== "'") {
+    return "wrap the bcrypt hash in single quotes, e.g. CADDY_AUTH_HASH='$2a$14$...'";
   }
   return /^\$2[aby]\$\d{2}\$/.test(v) ? null : "must be bcrypt hash ($2a$/$2b$/$2y$...)";
 });
-checkPort("RCLONE_MANAGER_APP_PORT", true);
+checkPort("APP_PORT", true);
 
 // 2) Optional env from compose files
-checkPort("RCLONE_MANAGER_APP_HOST_PORT", false);
-checkPort("RCLONE_MANAGER_DOZZLE_HOST_PORT", false);
-checkPort("RCLONE_MANAGER_FILEBROWSER_HOST_PORT", false);
-checkPort("RCLONE_MANAGER_WEBSSH_HOST_PORT", false);
-checkOptional("RCLONE_MANAGER_NODE_ENV", "app runtime env");
-checkOptional("RCLONE_MANAGER_HEALTH_PATH", "health endpoint path", (v) => (v.startsWith("/") ? null : "must start with '/'"));
-checkOptional("RCLONE_MANAGER_DOCKER_SOCK", "docker socket path override");
+checkPort("APP_HOST_PORT", false);
+checkPort("DOZZLE_HOST_PORT", false);
+checkPort("FILEBROWSER_HOST_PORT", false);
+checkPort("WEBSSH_HOST_PORT", false);
+checkOptional("NODE_ENV", "app runtime env");
+checkOptional("HEALTH_PATH", "health endpoint path", (v) => (v.startsWith("/") ? null : "must start with '/'"));
+checkOptional("DOCKER_SOCK", "docker socket path override");
 checkOptional("RCLONE_MANAGER_FRONTEND_URL", "rclone OAuth callback/frontend base URL", validateHttpUrl);
 checkOptional("RCLONE_MANAGER_ALLOWED_ORIGINS", "comma-separated CORS origins", validateOriginList);
 checkOptional("RCLONE_MANAGER_BACKEND_API_KEY", "optional shared key for external backend API callers", (v) =>
@@ -266,7 +266,7 @@ if (requireGoogleAuth) {
 }
 
 // 3) Flags
-for (const key of ["RCLONE_MANAGER_ENABLE_DOZZLE", "RCLONE_MANAGER_ENABLE_FILEBROWSER", "RCLONE_MANAGER_ENABLE_WEBSSH", "RCLONE_MANAGER_ENABLE_TAILSCALE"]) {
+for (const key of ["ENABLE_DOZZLE", "ENABLE_FILEBROWSER", "ENABLE_WEBSSH", "ENABLE_TAILSCALE"]) {
   const v = env[key];
   if (!v) {
     warnings.push(`${key} not set -> using default from scripts/compose`);
@@ -285,78 +285,78 @@ if (!fs.existsSync(cfCreds)) errors.push("cloudflared/credentials.json missing (
 else ok.push("cloudflared/credentials.json present");
 
 // 5) Optional webssh runtime tuning vars
-if ((env.RCLONE_MANAGER_ENABLE_WEBSSH || "true") === "true") {
-  if (!env.RCLONE_MANAGER_CUR_WHOAMI) warnings.push("RCLONE_MANAGER_CUR_WHOAMI optional (webssh linux default runner)");
-  if (!env.RCLONE_MANAGER_CUR_WORK_DIR) warnings.push("RCLONE_MANAGER_CUR_WORK_DIR optional (webssh linux default /home/runner)");
-  if (!env.RCLONE_MANAGER_SHELL) warnings.push("RCLONE_MANAGER_SHELL optional (webssh linux default /bin/bash)");
+if ((env.ENABLE_WEBSSH || "true") === "true") {
+  if (!env.CUR_WHOAMI) warnings.push("CUR_WHOAMI optional (webssh linux default runner)");
+  if (!env.CUR_WORK_DIR) warnings.push("CUR_WORK_DIR optional (webssh linux default /home/runner)");
+  if (!env.SHELL) warnings.push("SHELL optional (webssh linux default /bin/bash)");
 }
 
 // 6) Tailscale + keep-ip rules based on compose.access.yml
-if (env.RCLONE_MANAGER_ENABLE_TAILSCALE === "true") {
-  checkRequired("RCLONE_MANAGER_TAILSCALE_AUTHKEY", "required by tailscale service", (v) =>
+if (env.ENABLE_TAILSCALE === "true") {
+  checkRequired("TAILSCALE_AUTHKEY", "required by tailscale service", (v) =>
     v.startsWith("tskey-") ? null : "must start with tskey-"
   );
-  checkRequired("RCLONE_MANAGER_TAILSCALE_TAILNET_DOMAIN", "required by dc.sh to render tailscale/serve.json", (v) =>
+  checkRequired("TAILSCALE_TAILNET_DOMAIN", "required by dc.sh to render tailscale/serve.json", (v) =>
     v && v !== "-" ? null : "must not be empty or '-'"
   );
-  checkOptional("RCLONE_MANAGER_TAILSCALE_TAGS", "advertise tags", (v) =>
+  checkOptional("TAILSCALE_TAGS", "advertise tags", (v) =>
     /^tag:[A-Za-z0-9][A-Za-z0-9_-]*(,tag:[A-Za-z0-9][A-Za-z0-9_-]*)*$/.test(v)
       ? null
       : "format must be tag:a,tag:b"
   );
 
-  const keepIp = (env.RCLONE_MANAGER_TAILSCALE_KEEP_IP_ENABLE || "false").trim();
-  if (!isBool(keepIp)) errors.push("RCLONE_MANAGER_TAILSCALE_KEEP_IP_ENABLE must be true|false");
+  const keepIp = (env.TAILSCALE_KEEP_IP_ENABLE || "false").trim();
+  if (!isBool(keepIp)) errors.push("TAILSCALE_KEEP_IP_ENABLE must be true|false");
 
-  const keepRemove = (env.RCLONE_MANAGER_TAILSCALE_KEEP_IP_REMOVE_HOSTNAME_ENABLE || "").trim();
+  const keepRemove = (env.TAILSCALE_KEEP_IP_REMOVE_HOSTNAME_ENABLE || "").trim();
   if (keepRemove && !isBool(keepRemove)) {
-    errors.push("RCLONE_MANAGER_TAILSCALE_KEEP_IP_REMOVE_HOSTNAME_ENABLE must be true|false when provided");
+    errors.push("TAILSCALE_KEEP_IP_REMOVE_HOSTNAME_ENABLE must be true|false when provided");
   }
 
   if (keepIp === "true") {
-    checkRequired("RCLONE_MANAGER_TAILSCALE_KEEP_IP_FIREBASE_URL", "required when keep-ip enabled", (v) =>
+    checkRequired("TAILSCALE_KEEP_IP_FIREBASE_URL", "required when keep-ip enabled", (v) =>
       isValidHttpsJsonUrl(v) ? null : "must be https URL ending with .json"
     );
-    checkOptional("RCLONE_MANAGER_TAILSCALE_KEEP_IP_CERTS_DIR", "certs dir path");
-    checkOptional("RCLONE_MANAGER_TAILSCALE_KEEP_IP_INTERVAL_SEC", "backup interval seconds", (v) => {
+    checkOptional("TAILSCALE_KEEP_IP_CERTS_DIR", "certs dir path");
+    checkOptional("TAILSCALE_KEEP_IP_INTERVAL_SEC", "backup interval seconds", (v) => {
       const n = Number(v);
       return Number.isInteger(n) && n >= 5 ? null : "must be integer >= 5";
     });
   } else {
-    warnings.push("RCLONE_MANAGER_TAILSCALE_KEEP_IP_ENABLE=false -> keep-ip backup/restore disabled");
+    warnings.push("TAILSCALE_KEEP_IP_ENABLE=false -> keep-ip backup/restore disabled");
   }
 
   const removeHostnameEnabled = keepRemove ? keepRemove === "true" : keepIp === "true";
   if (removeHostnameEnabled) {
-    if (!env.RCLONE_MANAGER_TAILSCALE_CLIENTID) {
-      errors.push("remove-hostname enabled requires RCLONE_MANAGER_TAILSCALE_CLIENTID");
+    if (!env.TAILSCALE_CLIENTID) {
+      errors.push("remove-hostname enabled requires TAILSCALE_CLIENTID");
     }
-    const authKey = (env.RCLONE_MANAGER_TAILSCALE_AUTHKEY || "").trim();
+    const authKey = (env.TAILSCALE_AUTHKEY || "").trim();
     if (!authKey) {
-      errors.push("remove-hostname enabled requires RCLONE_MANAGER_TAILSCALE_AUTHKEY");
+      errors.push("remove-hostname enabled requires TAILSCALE_AUTHKEY");
     } else if (!authKey.startsWith("tskey-client-")) {
-      errors.push("remove-hostname requires RCLONE_MANAGER_TAILSCALE_AUTHKEY in tskey-client-* format");
+      errors.push("remove-hostname requires TAILSCALE_AUTHKEY in tskey-client-* format");
     }
   }
 }
 
-const project = env.RCLONE_MANAGER_PROJECT_NAME || "<project>";
-const domain = env.RCLONE_MANAGER_DOMAIN || "<domain>";
-const host = env.RCLONE_MANAGER_PROJECT_NAME || "myapp";
-const tailnet = env.RCLONE_MANAGER_TAILSCALE_TAILNET_DOMAIN || "tailnet.local";
+const project = env.PROJECT_NAME || "<project>";
+const domain = env.DOMAIN || "<domain>";
+const host = env.PROJECT_NAME || "myapp";
+const tailnet = env.TAILSCALE_TAILNET_DOMAIN || "tailnet.local";
 const appHost = buildAppHost(project, domain);
 ok.push(`subdomain preview: app=${appHost}`);
-if ((env.RCLONE_MANAGER_ENABLE_DOZZLE || "true") === "true") ok.push(`subdomain preview: logs=logs.${appHost}`);
-if ((env.RCLONE_MANAGER_ENABLE_FILEBROWSER || "true") === "true") ok.push(`subdomain preview: files=files.${appHost}`);
-if ((env.RCLONE_MANAGER_ENABLE_WEBSSH || "true") === "true") ok.push(`subdomain preview: ttyd=ttyd.${appHost}`);
-if (env.RCLONE_MANAGER_ENABLE_TAILSCALE === "true") {
-  const dozzlePort = env.RCLONE_MANAGER_DOZZLE_HOST_PORT || "18080";
-  const filesPort = env.RCLONE_MANAGER_FILEBROWSER_HOST_PORT || "18081";
-  const sshPort = env.RCLONE_MANAGER_WEBSSH_HOST_PORT || "17681";
+if ((env.ENABLE_DOZZLE || "true") === "true") ok.push(`subdomain preview: logs=logs.${appHost}`);
+if ((env.ENABLE_FILEBROWSER || "true") === "true") ok.push(`subdomain preview: files=files.${appHost}`);
+if ((env.ENABLE_WEBSSH || "true") === "true") ok.push(`subdomain preview: ttyd=ttyd.${appHost}`);
+if (env.ENABLE_TAILSCALE === "true") {
+  const dozzlePort = env.DOZZLE_HOST_PORT || "18080";
+  const filesPort = env.FILEBROWSER_HOST_PORT || "18081";
+  const sshPort = env.WEBSSH_HOST_PORT || "17681";
   ok.push(`tailnet host: https://${host}.${tailnet}`);
-  if ((env.RCLONE_MANAGER_ENABLE_DOZZLE || "true") === "true") ok.push(`tailnet dozzle: http://${host}.${tailnet}:${dozzlePort}`);
-  if ((env.RCLONE_MANAGER_ENABLE_FILEBROWSER || "true") === "true") ok.push(`tailnet filebrowser: http://${host}.${tailnet}:${filesPort}`);
-  if ((env.RCLONE_MANAGER_ENABLE_WEBSSH || "true") === "true") ok.push(`tailnet webssh: http://${host}.${tailnet}:${sshPort}`);
+  if ((env.ENABLE_DOZZLE || "true") === "true") ok.push(`tailnet dozzle: http://${host}.${tailnet}:${dozzlePort}`);
+  if ((env.ENABLE_FILEBROWSER || "true") === "true") ok.push(`tailnet filebrowser: http://${host}.${tailnet}:${filesPort}`);
+  if ((env.ENABLE_WEBSSH || "true") === "true") ok.push(`tailnet webssh: http://${host}.${tailnet}:${sshPort}`);
 }
 
 console.log("\n📋 ENV VALIDATION REPORT");

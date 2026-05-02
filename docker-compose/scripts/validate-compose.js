@@ -35,13 +35,13 @@ function parseEnvFile(filePath) {
 
 function profileArgsFromEnv(env) {
   const profiles = [];
-  const curOs = String(env.RCLONE_MANAGER_CUR_OS || process.platform).toLowerCase();
+  const curOs = String(env.CUR_OS || process.platform).toLowerCase();
   const isWindows = curOs.includes('win');
 
-  if (env.RCLONE_MANAGER_ENABLE_DOZZLE !== 'false') profiles.push('dozzle');
-  if (env.RCLONE_MANAGER_ENABLE_FILEBROWSER !== 'false') profiles.push('filebrowser');
-  if (env.RCLONE_MANAGER_ENABLE_WEBSSH !== 'false') profiles.push(isWindows ? 'webssh-windows' : 'webssh-linux');
-  if (env.RCLONE_MANAGER_ENABLE_TAILSCALE === 'true') profiles.push(isWindows ? 'tailscale-windows' : 'tailscale-linux');
+  if (env.ENABLE_DOZZLE !== 'false') profiles.push('dozzle');
+  if (env.ENABLE_FILEBROWSER !== 'false') profiles.push('filebrowser');
+  if (env.ENABLE_WEBSSH !== 'false') profiles.push(isWindows ? 'webssh-windows' : 'webssh-linux');
+  if (env.ENABLE_TAILSCALE === 'true') profiles.push(isWindows ? 'tailscale-windows' : 'tailscale-linux');
 
   return profiles.flatMap((profile) => ['--profile', profile]);
 }

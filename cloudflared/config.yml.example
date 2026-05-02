@@ -16,22 +16,22 @@ credentials-file: /etc/cloudflared/credentials.json
 
 ingress:
   # ── Main application ────────────────────────────────────────────
-  # Default .env example uses: main.${RCLONE_MANAGER_DOMAIN}
+  # Default .env example uses: main.${DOMAIN}
   - hostname: main.example.com
     service: http://caddy:80
 
   # ── Dozzle: real-time log viewer ───────────────────────────────
-  # Enabled when RCLONE_MANAGER_ENABLE_DOZZLE=true
+  # Enabled when ENABLE_DOZZLE=true
   - hostname: dozzle.example.com
     service: http://caddy:80
 
   # ── Filebrowser: log file manager ─────────────────────────────
-  # Enabled when RCLONE_MANAGER_ENABLE_FILEBROWSER=true
+  # Enabled when ENABLE_FILEBROWSER=true
   - hostname: files.example.com
     service: http://caddy:80
 
   # ── WebSSH: browser terminal ──────────────────────────────────
-  # Enabled when RCLONE_MANAGER_ENABLE_WEBSSH=true
+  # Enabled when ENABLE_WEBSSH=true
   # ⚠️  Protect with Cloudflare Access or Tailscale for production!
   - hostname: ttyd.example.com
     service: http://caddy:80

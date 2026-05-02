@@ -7,20 +7,20 @@
 ### What's New
 
 **Deploy any Docker image in minutes**
-Change two lines in `.env` (`RCLONE_MANAGER_APP_IMAGE` and `RCLONE_MANAGER_APP_PORT`) and your app is live — no YAML editing required.
+Change two lines in `.env` (`APP_IMAGE` and `APP_PORT`) and your app is live — no YAML editing required.
 
 **Feature flags — enable what you need**
 Turn ops tools on or off with simple env vars:
 
 ```env
-RCLONE_MANAGER_ENABLE_DOZZLE=true
-RCLONE_MANAGER_ENABLE_FILEBROWSER=true
-RCLONE_MANAGER_ENABLE_WEBSSH=false
-RCLONE_MANAGER_ENABLE_TAILSCALE=false
+ENABLE_DOZZLE=true
+ENABLE_FILEBROWSER=true
+ENABLE_WEBSSH=false
+ENABLE_TAILSCALE=false
 ```
 
 **Subdomains auto-generated**
-Set `RCLONE_MANAGER_PROJECT_NAME=gitea` and `RCLONE_MANAGER_DOMAIN=example.com` once. All service URLs follow automatically:
+Set `PROJECT_NAME=gitea` and `DOMAIN=example.com` once. All service URLs follow automatically:
 
 - `gitea.example.com` → your app
 - `logs.gitea.example.com` → log viewer
@@ -45,8 +45,8 @@ npm run dockerapp-exec:up
 
 If upgrading from the previous `docker-compose.yml` setup:
 
-1. Replace `SUBDOMAIN_APP/DOZZLE/FILEBROWSER/WEBSSH` with just `RCLONE_MANAGER_PROJECT_NAME`
-2. Replace `TAILSCALE_CLIENT_SECRET` with `RCLONE_MANAGER_TAILSCALE_AUTHKEY`
+1. Replace `SUBDOMAIN_APP/DOZZLE/FILEBROWSER/WEBSSH` with just `PROJECT_NAME`
+2. Replace `TAILSCALE_CLIENT_SECRET` with `TAILSCALE_AUTHKEY`
 3. Replace `docker compose up` with `bash docker-compose/scripts/dc.sh up` or `npm run dockerapp-exec:up`
 4. Update `cloudflared/config.yml` manually from `cloudflared/config.yml.example` if you use Cloudflare Tunnel
 

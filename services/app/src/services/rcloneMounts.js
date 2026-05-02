@@ -42,10 +42,10 @@ function filebrowserBaseUrl() {
   const explicit = publicUrlFromEnv('RCLONE_MANAGER_FILEBROWSER_PUBLIC_URL');
   if (explicit) return explicit;
 
-  const cloudflared = publicUrlFromEnv('RCLONE_MANAGER_CLOUDFLARED_TUNNEL_HOSTNAME_5');
+  const cloudflared = publicUrlFromEnv('CLOUDFLARED_TUNNEL_HOSTNAME_5');
   if (cloudflared) return cloudflared;
 
-  const domain = resolveEnvValue('RCLONE_MANAGER_DOMAIN').trim();
+  const domain = resolveEnvValue('DOMAIN').trim();
   return domain ? `https://files.${domain}` : '';
 }
 

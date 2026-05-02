@@ -1,10 +1,10 @@
 # rclone Manager backend: health, auth, ops links
 # VS Code REST Client reads .env through {{$dotenv VAR_NAME}}.
 
-@baseUrl = http://127.0.0.1:{{$dotenv RCLONE_MANAGER_APP_HOST_PORT}}
+@baseUrl = http://127.0.0.1:{{$dotenv APP_HOST_PORT}}
 @apiKey = {{$dotenv RCLONE_MANAGER_BACKEND_API_KEY}}
-@firebaseIdToken = {{$dotenv RCLONE_MANAGER_HTTP_FIREBASE_ID_TOKEN}}
-@sessionToken = {{$dotenv RCLONE_MANAGER_HTTP_SESSION_TOKEN}}
+@firebaseIdToken = {{$dotenv HTTP_FIREBASE_ID_TOKEN}}
+@sessionToken = {{$dotenv HTTP_SESSION_TOKEN}}
 
 ###
 # Health does not require x-api-key.
@@ -24,7 +24,7 @@ x-api-key: {{apiKey}}
 
 ###
 # Exchange a Firebase ID token for an internal session token.
-# Set RCLONE_MANAGER_HTTP_FIREBASE_ID_TOKEN in .env when you want to run this.
+# Set HTTP_FIREBASE_ID_TOKEN in .env when you want to run this.
 POST {{baseUrl}}/api/auth/google
 Accept: application/json
 Content-Type: application/json
@@ -35,7 +35,7 @@ Content-Type: application/json
 
 ###
 # Check an internal auth session.
-# Set RCLONE_MANAGER_HTTP_SESSION_TOKEN in .env, or paste the token returned above.
+# Set HTTP_SESSION_TOKEN in .env, or paste the token returned above.
 GET {{baseUrl}}/api/auth/me
 Accept: application/json
 Authorization: Bearer {{sessionToken}}

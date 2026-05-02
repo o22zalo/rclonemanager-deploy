@@ -20,12 +20,12 @@ Tài liệu triển khai chuẩn theo **codebase hiện tại**.
 ### Ops
 - `docker-compose/compose.ops.yml`
 - `dozzle`, `filebrowser`, `webssh`, `webssh-windows`.
-- Bật/tắt qua `RCLONE_MANAGER_ENABLE_DOZZLE`, `RCLONE_MANAGER_ENABLE_FILEBROWSER`, `RCLONE_MANAGER_ENABLE_WEBSSH`.
+- Bật/tắt qua `ENABLE_DOZZLE`, `ENABLE_FILEBROWSER`, `ENABLE_WEBSSH`.
 
 ### Access
 - `docker-compose/compose.access.yml`
 - `tailscale-linux`, `tailscale-windows`, keep-ip prepare/backup loops.
-- Bật/tắt qua `RCLONE_MANAGER_ENABLE_TAILSCALE`.
+- Bật/tắt qua `ENABLE_TAILSCALE`.
 
 ### Apps
 - `compose.apps.yml`
@@ -35,44 +35,44 @@ Tài liệu triển khai chuẩn theo **codebase hiện tại**.
 
 Các biến dưới đây nếu thiếu/sai sẽ **dừng deploy** ở bước validate:
 
-- `RCLONE_MANAGER_PROJECT_NAME`
-- `RCLONE_MANAGER_DOMAIN`
-- `RCLONE_MANAGER_CADDY_EMAIL`
-- `RCLONE_MANAGER_CADDY_AUTH_USER`
-- `RCLONE_MANAGER_CADDY_AUTH_HASH` (bcrypt)
-- `RCLONE_MANAGER_APP_PORT`
+- `PROJECT_NAME`
+- `DOMAIN`
+- `CADDY_EMAIL`
+- `CADDY_AUTH_USER`
+- `CADDY_AUTH_HASH` (bcrypt)
+- `APP_PORT`
 
 Thêm nữa, do mount bắt buộc trong `cloudflared`:
 
 - `cloudflared/config.yml` phải tồn tại.
 - `cloudflared/credentials.json` phải tồn tại.
 
-Nếu `RCLONE_MANAGER_ENABLE_TAILSCALE=true`, bắt buộc thêm:
+Nếu `ENABLE_TAILSCALE=true`, bắt buộc thêm:
 
-- `RCLONE_MANAGER_TAILSCALE_AUTHKEY`
-- `RCLONE_MANAGER_TAILSCALE_TAILNET_DOMAIN`
+- `TAILSCALE_AUTHKEY`
+- `TAILSCALE_TAILNET_DOMAIN`
 
-Nếu `RCLONE_MANAGER_TAILSCALE_KEEP_IP_ENABLE=true`, bắt buộc thêm:
+Nếu `TAILSCALE_KEEP_IP_ENABLE=true`, bắt buộc thêm:
 
-- `RCLONE_MANAGER_TAILSCALE_KEEP_IP_FIREBASE_URL` (https + kết thúc `.json`).
+- `TAILSCALE_KEEP_IP_FIREBASE_URL` (https + kết thúc `.json`).
 
-Nếu `RCLONE_MANAGER_TAILSCALE_KEEP_IP_REMOVE_HOSTNAME_ENABLE=true`, bắt buộc thêm:
+Nếu `TAILSCALE_KEEP_IP_REMOVE_HOSTNAME_ENABLE=true`, bắt buộc thêm:
 
-- `RCLONE_MANAGER_TAILSCALE_CLIENTID`
-- `RCLONE_MANAGER_TAILSCALE_AUTHKEY` theo format `tskey-client-...`
+- `TAILSCALE_CLIENTID`
+- `TAILSCALE_AUTHKEY` theo format `tskey-client-...`
 
 ## 4) Các env optional nhưng nên cấu hình
 
-- `RCLONE_MANAGER_APP_HOST_PORT`: mở truy cập localhost trực tiếp.
-- `RCLONE_MANAGER_NODE_ENV`: mặc định `production`.
-- `RCLONE_MANAGER_HEALTH_PATH`: mặc định `/health`.
-- `RCLONE_MANAGER_DOCKER_SOCK`: đường dẫn docker socket nếu khác mặc định.
-- `RCLONE_MANAGER_TAILSCALE_TAGS`: mặc định `tag:container`.
-- `RCLONE_MANAGER_TAILSCALE_KEEP_IP_INTERVAL_SEC`: mặc định `30`.
-- `RCLONE_MANAGER_CUR_WHOAMI`, `RCLONE_MANAGER_CUR_WORK_DIR`, `RCLONE_MANAGER_SHELL`: hỗ trợ webssh Linux thân thiện hơn.
-- `RCLONE_MANAGER_DOZZLE_HOST_PORT` (default `18080`): cổng localhost cho Dozzle.
-- `RCLONE_MANAGER_FILEBROWSER_HOST_PORT` (default `18081`): cổng localhost cho Filebrowser.
-- `RCLONE_MANAGER_WEBSSH_HOST_PORT` (default `17681`): cổng localhost cho WebSSH.
+- `APP_HOST_PORT`: mở truy cập localhost trực tiếp.
+- `NODE_ENV`: mặc định `production`.
+- `HEALTH_PATH`: mặc định `/health`.
+- `DOCKER_SOCK`: đường dẫn docker socket nếu khác mặc định.
+- `TAILSCALE_TAGS`: mặc định `tag:container`.
+- `TAILSCALE_KEEP_IP_INTERVAL_SEC`: mặc định `30`.
+- `CUR_WHOAMI`, `CUR_WORK_DIR`, `SHELL`: hỗ trợ webssh Linux thân thiện hơn.
+- `DOZZLE_HOST_PORT` (default `18080`): cổng localhost cho Dozzle.
+- `FILEBROWSER_HOST_PORT` (default `18081`): cổng localhost cho Filebrowser.
+- `WEBSSH_HOST_PORT` (default `17681`): cổng localhost cho WebSSH.
 
 ## 5) Cấu hình Cloudflare Tunnel (chi tiết kỹ thuật)
 
@@ -92,15 +92,15 @@ Mọi request public đi theo chuỗi:
 
 Routing dựa labels trong compose:
 
-- App: `${RCLONE_MANAGER_PROJECT_NAME}.${RCLONE_MANAGER_DOMAIN}` (+ alias `main.${RCLONE_MANAGER_DOMAIN}`, `${RCLONE_MANAGER_DOMAIN}`)
-- Dozzle: `logs.${RCLONE_MANAGER_PROJECT_NAME}.${RCLONE_MANAGER_DOMAIN}`
-- Filebrowser: `files.${RCLONE_MANAGER_PROJECT_NAME}.${RCLONE_MANAGER_DOMAIN}`
-- WebSSH: `ttyd.${RCLONE_MANAGER_PROJECT_NAME}.${RCLONE_MANAGER_DOMAIN}`
+- App: `${PROJECT_NAME}.${DOMAIN}` (+ alias `main.${DOMAIN}`, `${DOMAIN}`)
+- Dozzle: `logs.${PROJECT_NAME}.${DOMAIN}`
+- Filebrowser: `files.${PROJECT_NAME}.${DOMAIN}`
+- WebSSH: `ttyd.${PROJECT_NAME}.${DOMAIN}`
 
 Auth cơ bản dùng:
 
-- User: `RCLONE_MANAGER_CADDY_AUTH_USER`
-- Hash: `RCLONE_MANAGER_CADDY_AUTH_HASH`
+- User: `CADDY_AUTH_USER`
+- Hash: `CADDY_AUTH_HASH`
 
 ## 7) Lệnh deploy đề xuất
 
@@ -114,11 +114,11 @@ npm run dockerapp-exec:logs
 
 ## Truy cập dịch vụ qua Tailscale hostname + port
 
-Khi `RCLONE_MANAGER_ENABLE_TAILSCALE=true`, bạn có thể dùng hostname tailnet của node:
+Khi `ENABLE_TAILSCALE=true`, bạn có thể dùng hostname tailnet của node:
 
-- `http://${RCLONE_MANAGER_PROJECT_NAME}.${RCLONE_MANAGER_TAILSCALE_TAILNET_DOMAIN}:${RCLONE_MANAGER_DOZZLE_HOST_PORT:-18080}` → Dozzle
-- `http://${RCLONE_MANAGER_PROJECT_NAME}.${RCLONE_MANAGER_TAILSCALE_TAILNET_DOMAIN}:${RCLONE_MANAGER_FILEBROWSER_HOST_PORT:-18081}` → Filebrowser
-- `http://${RCLONE_MANAGER_PROJECT_NAME}.${RCLONE_MANAGER_TAILSCALE_TAILNET_DOMAIN}:${RCLONE_MANAGER_WEBSSH_HOST_PORT:-17681}` → WebSSH
+- `http://${PROJECT_NAME}.${TAILSCALE_TAILNET_DOMAIN}:${DOZZLE_HOST_PORT:-18080}` → Dozzle
+- `http://${PROJECT_NAME}.${TAILSCALE_TAILNET_DOMAIN}:${FILEBROWSER_HOST_PORT:-18081}` → Filebrowser
+- `http://${PROJECT_NAME}.${TAILSCALE_TAILNET_DOMAIN}:${WEBSSH_HOST_PORT:-17681}` → WebSSH
 
 Ghi chú:
 - Các cổng này bind `127.0.0.1` trên host; truy cập qua tailnet phụ thuộc cách bạn chạy Tailscale (container host-network Linux hay host-level trên Windows/WSL).
@@ -128,8 +128,8 @@ Ghi chú:
 
 - `docker compose ps` tất cả service expected đều `running`/`healthy`.
 - Truy cập `http(s)://<project>.<domain>` qua tunnel.
-- Kiểm tra endpoint health: `/<RCLONE_MANAGER_HEALTH_PATH>`.
-- Nếu bật Tailscale: truy cập `https://<RCLONE_MANAGER_PROJECT_NAME>.<RCLONE_MANAGER_TAILSCALE_TAILNET_DOMAIN>`.
+- Kiểm tra endpoint health: `/<HEALTH_PATH>`.
+- Nếu bật Tailscale: truy cập `https://<PROJECT_NAME>.<TAILSCALE_TAILNET_DOMAIN>`.
 
 ## 9) Tài liệu từng dịch vụ
 

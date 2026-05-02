@@ -15,27 +15,27 @@
 //   - Patch resolv.conf if magic DNS IP is missing
 //
 // Environment variables:
-//   RCLONE_MANAGER_TAILSCALE_WATCHDOG_MODE            monitor|heal (default: monitor)
-//   RCLONE_MANAGER_TAILSCALE_WATCHDOG_INTERVAL_SEC    check interval in seconds (default: 30)
-//   RCLONE_MANAGER_TAILSCALE_WATCHDOG_ALERT_EVERY     repeat warning every N failed cycles (default: 5)
-//   RCLONE_MANAGER_TAILSCALE_WATCHDOG_LOG_OK_EVERY    log healthy status every N cycles, 0=always (default: 10)
-//   RCLONE_MANAGER_TAILSCALE_WATCHDOG_NETCHECK        include localapi netcheck in warnings (default: true)
+//   TAILSCALE_WATCHDOG_MODE            monitor|heal (default: monitor)
+//   TAILSCALE_WATCHDOG_INTERVAL_SEC    check interval in seconds (default: 30)
+//   TAILSCALE_WATCHDOG_ALERT_EVERY     repeat warning every N failed cycles (default: 5)
+//   TAILSCALE_WATCHDOG_LOG_OK_EVERY    log healthy status every N cycles, 0=always (default: 10)
+//   TAILSCALE_WATCHDOG_NETCHECK        include localapi netcheck in warnings (default: true)
 //
-//   RCLONE_MANAGER_TAILSCALE_WATCHDOG_AUTO_RECONNECT  true|false (default: false in monitor, true in heal)
-//   RCLONE_MANAGER_TAILSCALE_WATCHDOG_DNS_CHECK       true|false (default: true)
-//   RCLONE_MANAGER_TAILSCALE_WATCHDOG_DNS_CHECK_ALWAYS true|false (default: false)
-//   RCLONE_MANAGER_TAILSCALE_WATCHDOG_DNS_FIX         true|false (default: false in monitor, true in heal)
-//   RCLONE_MANAGER_TAILSCALE_WATCHDOG_DNS_FIX_ALWAYS  true|false (default: false)
-//   RCLONE_MANAGER_TAILSCALE_WATCHDOG_RECONNECT_MIN_SEC  min seconds between reconnect attempts (default: 60)
-//   RCLONE_MANAGER_TAILSCALE_WATCHDOG_HEAL_AFTER_STREAK  failed cycles before reconnect attempt (default: 2)
-//   RCLONE_MANAGER_TAILSCALE_WATCHDOG_UP_ACCEPT_DNS      pass --accept-dns to tailscale up (default: false)
+//   TAILSCALE_WATCHDOG_AUTO_RECONNECT  true|false (default: false in monitor, true in heal)
+//   TAILSCALE_WATCHDOG_DNS_CHECK       true|false (default: true)
+//   TAILSCALE_WATCHDOG_DNS_CHECK_ALWAYS true|false (default: false)
+//   TAILSCALE_WATCHDOG_DNS_FIX         true|false (default: false in monitor, true in heal)
+//   TAILSCALE_WATCHDOG_DNS_FIX_ALWAYS  true|false (default: false)
+//   TAILSCALE_WATCHDOG_RECONNECT_MIN_SEC  min seconds between reconnect attempts (default: 60)
+//   TAILSCALE_WATCHDOG_HEAL_AFTER_STREAK  failed cycles before reconnect attempt (default: 2)
+//   TAILSCALE_WATCHDOG_UP_ACCEPT_DNS      pass --accept-dns to tailscale up (default: false)
 //
-//   RCLONE_MANAGER_TAILSCALE_SOCKET                   local API socket path (default: /tmp/tailscaled.sock)
-//   RCLONE_MANAGER_TAILSCALE_BIN                      tailscale binary (default: tailscale)
-//   RCLONE_MANAGER_TAILSCALE_DNS_MAGIC_IP             magic DNS IP (default: 100.100.100.100)
-//   RCLONE_MANAGER_TAILSCALE_RESOLV_CONF              resolv.conf path (default: /etc/resolv.conf)
-//   RCLONE_MANAGER_TAILSCALE_UP_EXTRA_ARGS            extra args for `tailscale up` (default: "")
-//   RCLONE_MANAGER_PROJECT_NAME                       host label in logs
+//   TAILSCALE_SOCKET                   local API socket path (default: /tmp/tailscaled.sock)
+//   TAILSCALE_BIN                      tailscale binary (default: tailscale)
+//   TAILSCALE_DNS_MAGIC_IP             magic DNS IP (default: 100.100.100.100)
+//   TAILSCALE_RESOLV_CONF              resolv.conf path (default: /etc/resolv.conf)
+//   TAILSCALE_UP_EXTRA_ARGS            extra args for `tailscale up` (default: "")
+//   PROJECT_NAME                       host label in logs
 // ================================================================
 
 const http = require("http");
@@ -679,49 +679,49 @@ function normalizeMode(value) {
 }
 
 async function run() {
-  const mode = normalizeMode(process.env.RCLONE_MANAGER_TAILSCALE_WATCHDOG_MODE);
-  const intervalSec = toIntMin(process.env.RCLONE_MANAGER_TAILSCALE_WATCHDOG_INTERVAL_SEC, 30, 10);
-  const alertEvery = toIntMin(process.env.RCLONE_MANAGER_TAILSCALE_WATCHDOG_ALERT_EVERY, 5, 1);
-  const logOkEvery = toIntMin(process.env.RCLONE_MANAGER_TAILSCALE_WATCHDOG_LOG_OK_EVERY, 10, 0);
-  const netcheckEnabled = toBool(process.env.RCLONE_MANAGER_TAILSCALE_WATCHDOG_NETCHECK, true);
+  const mode = normalizeMode(process.env.TAILSCALE_WATCHDOG_MODE);
+  const intervalSec = toIntMin(process.env.TAILSCALE_WATCHDOG_INTERVAL_SEC, 30, 10);
+  const alertEvery = toIntMin(process.env.TAILSCALE_WATCHDOG_ALERT_EVERY, 5, 1);
+  const logOkEvery = toIntMin(process.env.TAILSCALE_WATCHDOG_LOG_OK_EVERY, 10, 0);
+  const netcheckEnabled = toBool(process.env.TAILSCALE_WATCHDOG_NETCHECK, true);
 
   const autoReconnectDefault = mode === "heal";
   const dnsFixDefault = mode === "heal";
-  let autoReconnect = toBool(process.env.RCLONE_MANAGER_TAILSCALE_WATCHDOG_AUTO_RECONNECT, autoReconnectDefault);
-  let dnsFix = toBool(process.env.RCLONE_MANAGER_TAILSCALE_WATCHDOG_DNS_FIX, dnsFixDefault);
+  let autoReconnect = toBool(process.env.TAILSCALE_WATCHDOG_AUTO_RECONNECT, autoReconnectDefault);
+  let dnsFix = toBool(process.env.TAILSCALE_WATCHDOG_DNS_FIX, dnsFixDefault);
 
   if (mode === "monitor") {
     if (autoReconnect) {
       logEvent(
         "warn",
         "TSWD_CFG_OVERRIDE",
-        "RCLONE_MANAGER_TAILSCALE_WATCHDOG_AUTO_RECONNECT=true ignored because mode=monitor",
+        "TAILSCALE_WATCHDOG_AUTO_RECONNECT=true ignored because mode=monitor",
       );
     }
     if (dnsFix) {
       logEvent(
         "warn",
         "TSWD_CFG_OVERRIDE",
-        "RCLONE_MANAGER_TAILSCALE_WATCHDOG_DNS_FIX=true ignored because mode=monitor",
+        "TAILSCALE_WATCHDOG_DNS_FIX=true ignored because mode=monitor",
       );
     }
     autoReconnect = false;
     dnsFix = false;
   }
 
-  const dnsCheck = toBool(process.env.RCLONE_MANAGER_TAILSCALE_WATCHDOG_DNS_CHECK, true);
-  const dnsCheckAlways = toBool(process.env.RCLONE_MANAGER_TAILSCALE_WATCHDOG_DNS_CHECK_ALWAYS, false);
-  const dnsFixAlways = toBool(process.env.RCLONE_MANAGER_TAILSCALE_WATCHDOG_DNS_FIX_ALWAYS, false);
-  const reconnectMinSec = toIntMin(process.env.RCLONE_MANAGER_TAILSCALE_WATCHDOG_RECONNECT_MIN_SEC, 60, 10);
-  const healAfterStreak = toIntMin(process.env.RCLONE_MANAGER_TAILSCALE_WATCHDOG_HEAL_AFTER_STREAK, 2, 1);
+  const dnsCheck = toBool(process.env.TAILSCALE_WATCHDOG_DNS_CHECK, true);
+  const dnsCheckAlways = toBool(process.env.TAILSCALE_WATCHDOG_DNS_CHECK_ALWAYS, false);
+  const dnsFixAlways = toBool(process.env.TAILSCALE_WATCHDOG_DNS_FIX_ALWAYS, false);
+  const reconnectMinSec = toIntMin(process.env.TAILSCALE_WATCHDOG_RECONNECT_MIN_SEC, 60, 10);
+  const healAfterStreak = toIntMin(process.env.TAILSCALE_WATCHDOG_HEAL_AFTER_STREAK, 2, 1);
 
-  const socketPath = (process.env.RCLONE_MANAGER_TAILSCALE_SOCKET || "/tmp/tailscaled.sock").trim();
-  const bin = (process.env.RCLONE_MANAGER_TAILSCALE_BIN || "tailscale").trim();
-  const magicIp = (process.env.RCLONE_MANAGER_TAILSCALE_DNS_MAGIC_IP || "100.100.100.100").trim();
-  const resolvConfPath = (process.env.RCLONE_MANAGER_TAILSCALE_RESOLV_CONF || "/etc/resolv.conf").trim();
-  const projectName = (process.env.RCLONE_MANAGER_PROJECT_NAME || "").trim();
-  const upAcceptDns = toBool(process.env.RCLONE_MANAGER_TAILSCALE_WATCHDOG_UP_ACCEPT_DNS, false);
-  const extraArgsRaw = (process.env.RCLONE_MANAGER_TAILSCALE_UP_EXTRA_ARGS || "").trim();
+  const socketPath = (process.env.TAILSCALE_SOCKET || "/tmp/tailscaled.sock").trim();
+  const bin = (process.env.TAILSCALE_BIN || "tailscale").trim();
+  const magicIp = (process.env.TAILSCALE_DNS_MAGIC_IP || "100.100.100.100").trim();
+  const resolvConfPath = (process.env.TAILSCALE_RESOLV_CONF || "/etc/resolv.conf").trim();
+  const projectName = (process.env.PROJECT_NAME || "").trim();
+  const upAcceptDns = toBool(process.env.TAILSCALE_WATCHDOG_UP_ACCEPT_DNS, false);
+  const extraArgsRaw = (process.env.TAILSCALE_UP_EXTRA_ARGS || "").trim();
   const extraArgs = [
     `--accept-dns=${upAcceptDns ? "true" : "false"}`,
     ...(extraArgsRaw ? extraArgsRaw.split(/\s+/).filter(Boolean) : []),

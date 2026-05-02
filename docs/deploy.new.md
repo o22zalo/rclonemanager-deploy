@@ -27,18 +27,18 @@ Ket qua: `/opt/stacks/service-b` chua ban sao repo (da bo `.git`).
 - Sua service `app` trong `compose.apps.yml`:
   - doi `image` sang image thuc te.
   - bo/dieu chinh `build`.
-  - map lai `RCLONE_MANAGER_APP_PORT` neu khac.
+  - map lai `APP_PORT` neu khac.
 
 ## Buoc 3 — Chuan hoa data vao `.docker-volumes`
 
 Mac dinh stack dung:
 
-- `${RCLONE_MANAGER_DOCKER_VOLUMES_ROOT:-./.docker-volumes}`
+- `${DOCKER_VOLUMES_ROOT:-./.docker-volumes}`
 
 Quy uoc bat buoc khi them service moi:
 
 1. Moi du lieu can persist cua container phai map ve host duoi:
-   - `${RCLONE_MANAGER_DOCKER_VOLUMES_ROOT:-./.docker-volumes}/<service>/<du-lieu>:/path/in/container`
+   - `${DOCKER_VOLUMES_ROOT:-./.docker-volumes}/<service>/<du-lieu>:/path/in/container`
 2. Khong dung named volume an danh cho du lieu can quan sat tren host.
 3. Neu service co nhieu du lieu, tach thu muc ro rang (`config`, `data`, `db`, `logs`, `state`...).
 
@@ -49,8 +49,8 @@ services:
   myapp:
     image: ghcr.io/org/myapp:latest
     volumes:
-      - ${RCLONE_MANAGER_DOCKER_VOLUMES_ROOT:-./.docker-volumes}/myapp/data:/var/lib/myapp
-      - ${RCLONE_MANAGER_DOCKER_VOLUMES_ROOT:-./.docker-volumes}/myapp/config:/etc/myapp
+      - ${DOCKER_VOLUMES_ROOT:-./.docker-volumes}/myapp/data:/var/lib/myapp
+      - ${DOCKER_VOLUMES_ROOT:-./.docker-volumes}/myapp/config:/etc/myapp
 ```
 
 Thu muc goi y nen tao san:
@@ -85,18 +85,18 @@ New-Item -ItemType Directory -Force `
 
 Toi thieu:
 
-- `RCLONE_MANAGER_PROJECT_NAME`
-- `RCLONE_MANAGER_DOMAIN`
-- `RCLONE_MANAGER_CADDY_EMAIL`
-- `RCLONE_MANAGER_CADDY_AUTH_USER`
-- `RCLONE_MANAGER_CADDY_AUTH_HASH`
-- `RCLONE_MANAGER_APP_PORT`
+- `PROJECT_NAME`
+- `DOMAIN`
+- `CADDY_EMAIL`
+- `CADDY_AUTH_USER`
+- `CADDY_AUTH_HASH`
+- `APP_PORT`
 
 Tuy chon:
 
-- `RCLONE_MANAGER_APP_HOST_PORT`, `RCLONE_MANAGER_NODE_ENV`, `RCLONE_MANAGER_HEALTH_PATH`
+- `APP_HOST_PORT`, `NODE_ENV`, `HEALTH_PATH`
 - `ENABLE_*`
-- `RCLONE_MANAGER_DOCKER_VOLUMES_ROOT` (mac dinh `./.docker-volumes`)
+- `DOCKER_VOLUMES_ROOT` (mac dinh `./.docker-volumes`)
 - Tailscale block neu can private access.
 
 ## Buoc 5 — Cloudflare
@@ -125,10 +125,10 @@ npm run dockerapp-exec:logs
 
 ### Lop app
 - `app` healthy.
-- `http://127.0.0.1:${RCLONE_MANAGER_APP_HOST_PORT}` (neu co publish).
+- `http://127.0.0.1:${APP_HOST_PORT}` (neu co publish).
 
 ### Lop public
-- Host `${RCLONE_MANAGER_PROJECT_NAME}.${RCLONE_MANAGER_DOMAIN}` truy cap OK.
+- Host `${PROJECT_NAME}.${DOMAIN}` truy cap OK.
 - Basic auth hoat dong.
 
 ### Lop ops (neu bat)
@@ -141,14 +141,14 @@ npm run dockerapp-exec:logs
 - Tailnet host noi bo truy cap duoc.
 - Keep-ip logs khong bao loi Firebase/API.
 - Truy cap ops bang hostname+port qua tailnet:
-  - `http://${RCLONE_MANAGER_PROJECT_NAME}.${RCLONE_MANAGER_TAILSCALE_TAILNET_DOMAIN}:${RCLONE_MANAGER_DOZZLE_HOST_PORT:-18080}`
-  - `http://${RCLONE_MANAGER_PROJECT_NAME}.${RCLONE_MANAGER_TAILSCALE_TAILNET_DOMAIN}:${RCLONE_MANAGER_FILEBROWSER_HOST_PORT:-18081}`
-  - `http://${RCLONE_MANAGER_PROJECT_NAME}.${RCLONE_MANAGER_TAILSCALE_TAILNET_DOMAIN}:${RCLONE_MANAGER_WEBSSH_HOST_PORT:-17681}`
+  - `http://${PROJECT_NAME}.${TAILSCALE_TAILNET_DOMAIN}:${DOZZLE_HOST_PORT:-18080}`
+  - `http://${PROJECT_NAME}.${TAILSCALE_TAILNET_DOMAIN}:${FILEBROWSER_HOST_PORT:-18081}`
+  - `http://${PROJECT_NAME}.${TAILSCALE_TAILNET_DOMAIN}:${WEBSSH_HOST_PORT:-17681}`
 
 ## Tong ket diem can doi khi thay dich vu
 
 1. `compose.apps.yml` (image/build/port/health).
-2. Tat ca compose file co data volume: map vao `${RCLONE_MANAGER_DOCKER_VOLUMES_ROOT:-./.docker-volumes}/...`.
+2. Tat ca compose file co data volume: map vao `${DOCKER_VOLUMES_ROOT:-./.docker-volumes}/...`.
 3. `.env` (identity + domain + auth + port + flags).
 4. `cloudflared/config.yml` (ingress hostnames).
 5. Tuy chon: script CI/CD de reflect ten stack moi.

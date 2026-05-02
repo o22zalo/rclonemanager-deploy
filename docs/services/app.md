@@ -7,29 +7,29 @@
 
 ## Cấu hình chính
 - Service name: `app`.
-- Image local tag: `${RCLONE_MANAGER_PROJECT_NAME}-app:local`.
+- Image local tag: `${PROJECT_NAME}-app:local`.
 - Build context: `./services/app`.
-- Internal app port: `${RCLONE_MANAGER_APP_PORT}`.
-- Host publish: `127.0.0.1:${RCLONE_MANAGER_APP_HOST_PORT}:${RCLONE_MANAGER_APP_PORT}`.
-- Healthcheck: `wget http://localhost:${RCLONE_MANAGER_APP_PORT}${RCLONE_MANAGER_HEALTH_PATH}`.
+- Internal app port: `${APP_PORT}`.
+- Host publish: `127.0.0.1:${APP_HOST_PORT}:${APP_PORT}`.
+- Healthcheck: `wget http://localhost:${APP_PORT}${HEALTH_PATH}`.
 - Runtime data:
-  - `${RCLONE_MANAGER_DOCKER_VOLUMES_ROOT:-./.docker-volumes}/app/logs:/app/logs`
-  - `${RCLONE_MANAGER_DOCKER_VOLUMES_ROOT:-./.docker-volumes}/app/data:/data`
+  - `${DOCKER_VOLUMES_ROOT:-./.docker-volumes}/app/logs:/app/logs`
+  - `${DOCKER_VOLUMES_ROOT:-./.docker-volumes}/app/data:/data`
 
 ## ENV bắt buộc
-- `RCLONE_MANAGER_APP_PORT`: port app lắng nghe trong container.
-- `RCLONE_MANAGER_PROJECT_NAME`, `RCLONE_MANAGER_DOMAIN`: tạo hostname public.
+- `APP_PORT`: port app lắng nghe trong container.
+- `PROJECT_NAME`, `DOMAIN`: tạo hostname public.
 
 ## ENV app optional
-- `RCLONE_MANAGER_APP_HOST_PORT` (default `53682`): port localhost trên host machine.
-- `RCLONE_MANAGER_NODE_ENV` (default `production`).
-- `RCLONE_MANAGER_HEALTH_PATH` (default `/health`).
+- `APP_HOST_PORT` (default `53682`): port localhost trên host machine.
+- `NODE_ENV` (default `production`).
+- `HEALTH_PATH` (default `/health`).
 - `RCLONE_MANAGER_FRONTEND_URL`: base URL dùng sau OAuth callback. Để trống thì app redirect về cùng host nhận callback.
 - `RCLONE_MANAGER_ALLOWED_ORIGINS`: danh sách origin CORS, phân tách bằng dấu phẩy. Để trống cho UI cùng origin.
 - `RCLONE_MANAGER_BACKEND_API_KEY`: key optional cho client ngoài gọi API backend qua header `x-api-key`. Frontend bundled không hiển thị, lưu, hoặc gửi key này.
 - `RCLONE_MANAGER_REQUIRE_GOOGLE_AUTH`: bật/tắt Firebase Google Auth cho các API backend được bảo vệ (`true` mặc định).
 - `RCLONE_MANAGER_AUTH_SESSION_SECRET`, `RCLONE_MANAGER_AUTH_SESSION_TTL_MS`: ký và đặt hạn phiên Google auth nội bộ.
-- `GOOGLE_AUTH_FIREBASE_*`: Firebase Web app config dùng cho Google Sign-In qua Firebase Auth.
+- `RCLONE_MANAGER_GOOGLE_AUTH_FIREBASE_*`: Firebase Web app config dùng cho Google Sign-In qua Firebase Auth.
 - `RCLONE_MANAGER_ALLOWED_GMAILS`: danh sách Gmail được phép đăng nhập, phân tách bằng dấu phẩy.
 - `RCLONE_MANAGER_FIREBASE_DATABASE_URL`: Firebase Realtime Database root URL.
 - `RCLONE_MANAGER_FIREBASE_SERVICE_ACCOUNT_JSON`: service account JSON một dòng.
@@ -47,9 +47,9 @@
 ## Rclone local paths
 - Lệnh cloud-to-cloud không cần volume thêm.
 - Lệnh đọc/ghi file local phải dùng path trong container, ví dụ `/data/...`.
-- Host folder tương ứng là `${RCLONE_MANAGER_DOCKER_VOLUMES_ROOT:-./.docker-volumes}/app/data`.
+- Host folder tương ứng là `${DOCKER_VOLUMES_ROOT:-./.docker-volumes}/app/data`.
 
 ## Routing
-- Public host: `${RCLONE_MANAGER_PROJECT_NAME}.${RCLONE_MANAGER_DOMAIN}` (+ alias `main.${RCLONE_MANAGER_DOMAIN}` và `${RCLONE_MANAGER_DOMAIN}`).
-- Internal HTTPS host: `${RCLONE_MANAGER_PROJECT_NAME_TAILSCALE}.${RCLONE_MANAGER_TAILSCALE_TAILNET_DOMAIN}` với `tls internal`.
+- Public host: `${PROJECT_NAME}.${DOMAIN}` (+ alias `main.${DOMAIN}` và `${DOMAIN}`).
+- Internal HTTPS host: `${PROJECT_NAME_TAILSCALE}.${TAILSCALE_TAILNET_DOMAIN}` với `tls internal`.
 - App chính dùng Google Auth nội bộ thay vì Caddy Basic Auth. Các protected API nhận một trong hai kênh: Google session từ UI hoặc `x-api-key` từ client ngoài.

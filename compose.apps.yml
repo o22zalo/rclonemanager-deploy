@@ -2,16 +2,16 @@
 #  compose.apps.yml — Application Layer
 #  Builds the bundled rclone OAuth Manager from ./services/app
 #
-#  Subdomain: ${RCLONE_MANAGER_PROJECT_NAME}.${RCLONE_MANAGER_DOMAIN}
+#  Subdomain: ${PROJECT_NAME}.${DOMAIN}
 #
 #  Minimal required env:
-#    RCLONE_MANAGER_APP_PORT   — Port app listens on inside container
-#    RCLONE_MANAGER_PROJECT_NAME, RCLONE_MANAGER_DOMAIN, RCLONE_MANAGER_CADDY_AUTH_USER, RCLONE_MANAGER_CADDY_AUTH_HASH
+#    APP_PORT   — Port app listens on inside container
+#    PROJECT_NAME, DOMAIN, CADDY_AUTH_USER, CADDY_AUTH_HASH
 # ================================================================
 
 services:
   app:
-    image: "${RCLONE_MANAGER_PROJECT_NAME:-myapp}-app:local"
+    image: "${PROJECT_NAME:-myapp}-app:local"
     container_name: "main-app"
     build:
       context: ./services/app
@@ -21,19 +21,19 @@ services:
     env_file:
       - ./.env
     environment:
-      RCLONE_MANAGER_NODE_ENV: "${RCLONE_MANAGER_NODE_ENV:-production}"
-      RCLONE_MANAGER_PORT: "${RCLONE_MANAGER_APP_PORT:-53682}"
+      NODE_ENV: "${NODE_ENV:-production}"
+      RCLONE_MANAGER_PORT: "${APP_PORT:-53682}"
       RCLONE_MANAGER_FRONTEND_URL: "${RCLONE_MANAGER_FRONTEND_URL:-}"
       RCLONE_MANAGER_ALLOWED_ORIGINS: "${RCLONE_MANAGER_ALLOWED_ORIGINS:-}"
       RCLONE_MANAGER_RCLONE_MOUNT_ROOT: "${RCLONE_MANAGER_RCLONE_MOUNT_ROOT:-/mnt/docker-volumes}"
       RCLONE_MANAGER_FILEBROWSER_PUBLIC_URL: "${RCLONE_MANAGER_FILEBROWSER_PUBLIC_URL:-}"
     ports:
-      - "127.0.0.1:${RCLONE_MANAGER_APP_HOST_PORT:-53682}:${RCLONE_MANAGER_APP_PORT:-53682}"
+      - "127.0.0.1:${APP_HOST_PORT:-53682}:${APP_PORT:-53682}"
     volumes:
-      - ${RCLONE_MANAGER_DOCKER_VOLUMES_ROOT:-./.docker-volumes}/app/logs:/app/logs
-      - ${RCLONE_MANAGER_DOCKER_VOLUMES_ROOT:-./.docker-volumes}/app/data:/data
+      - ${DOCKER_VOLUMES_ROOT:-./.docker-volumes}/app/logs:/app/logs
+      - ${DOCKER_VOLUMES_ROOT:-./.docker-volumes}/app/data:/data
       - type: bind
-        source: ${RCLONE_MANAGER_DOCKER_VOLUMES_ROOT:-./.docker-volumes}
+        source: ${DOCKER_VOLUMES_ROOT:-./.docker-volumes}
         target: /mnt/docker-volumes
         bind:
           propagation: rshared
@@ -45,12 +45,12 @@ services:
       - apparmor:unconfined
     labels:
       # Public HTTP sites behind Cloudflare Tunnel.
-      - "caddy=http://${RCLONE_MANAGER_PROJECT_NAME}.${RCLONE_MANAGER_DOMAIN}, http://main.${RCLONE_MANAGER_DOMAIN}, http://${RCLONE_MANAGER_DOMAIN}, http://${RCLONE_MANAGER_PROJECT_NAME_TAILSCALE}.${RCLONE_MANAGER_TAILSCALE_TAILNET_DOMAIN}"
-      - "caddy.reverse_proxy={{upstreams ${RCLONE_MANAGER_APP_PORT:-53682}}}"
+      - "caddy=http://${PROJECT_NAME}.${DOMAIN}, http://main.${DOMAIN}, http://${DOMAIN}, http://${PROJECT_NAME_TAILSCALE}.${TAILSCALE_TAILNET_DOMAIN}"
+      - "caddy.reverse_proxy={{upstreams ${APP_PORT:-53682}}}"
       # Internal HTTPS site for Tailscale / trusted LAN access.
-      - "caddy_1=https://${RCLONE_MANAGER_PROJECT_NAME_TAILSCALE:-myapp}.${RCLONE_MANAGER_TAILSCALE_TAILNET_DOMAIN:-tailnet.local}"
+      - "caddy_1=https://${PROJECT_NAME_TAILSCALE:-myapp}.${TAILSCALE_TAILNET_DOMAIN:-tailnet.local}"
       - "caddy_1.tls=internal"
-      - "caddy_1.reverse_proxy={{upstreams ${RCLONE_MANAGER_APP_PORT:-53682}}}"
+      - "caddy_1.reverse_proxy={{upstreams ${APP_PORT:-53682}}}"
     networks: [app_net]
     restart: unless-stopped
     healthcheck:
@@ -58,7 +58,7 @@ services:
         - "CMD"
         - "sh"
         - "-c"
-        - "wget -qO- http://localhost:${RCLONE_MANAGER_APP_PORT:-53682}${RCLONE_MANAGER_HEALTH_PATH:-/health} || exit 1"
+        - "wget -qO- http://localhost:${APP_PORT:-53682}${HEALTH_PATH:-/health} || exit 1"
       interval: 30s
       timeout: 5s
       retries: 3

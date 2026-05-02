@@ -7,9 +7,9 @@
 ### Breaking Changes
 
 - `docker-compose.yml` split into 4 module files — must use `docker-compose/scripts/dc.sh` (or `-f docker-compose/compose.core.yml -f docker-compose/compose.ops.yml -f docker-compose/compose.access.yml -f compose.apps.yml`) instead of plain `docker compose`
-- Env var renames: `RCLONE_MANAGER_DOMAIN` replaces individual `SUBDOMAIN_*` vars; `RCLONE_MANAGER_PROJECT_NAME` is the compose project/network prefix (required)
-- `TAILSCALE_CLIENT_SECRET` → `RCLONE_MANAGER_TAILSCALE_AUTHKEY` (standardised Tailscale env naming)
-- `RCLONE_MANAGER_APP_PORT` now drives the app container port directly; `SUBDOMAIN_APP`, `SUBDOMAIN_DOZZLE`, etc. removed
+- Env var renames: `DOMAIN` replaces individual `SUBDOMAIN_*` vars; `PROJECT_NAME` is the compose project/network prefix (required)
+- `TAILSCALE_CLIENT_SECRET` → `TAILSCALE_AUTHKEY` (standardised Tailscale env naming)
+- `APP_PORT` now drives the app container port directly; `SUBDOMAIN_APP`, `SUBDOMAIN_DOZZLE`, etc. removed
 
 ### Added
 
@@ -17,22 +17,22 @@
 - **`docker-compose/compose.core.yml`** — caddy + cloudflared, network + volumes definition; always-on
 - **`docker-compose/compose.ops.yml`** — dozzle, filebrowser, webssh, webssh-windows; all profile-gated
 - **`docker-compose/compose.access.yml`** — tailscale-linux, tailscale-windows; profile-gated
-- **`compose.apps.yml`** — parameterised app service (`RCLONE_MANAGER_APP_IMAGE` + `RCLONE_MANAGER_APP_PORT`)
+- **`compose.apps.yml`** — parameterised app service (`APP_IMAGE` + `APP_PORT`)
 - **`docker-compose/scripts/up.sh` / `docker-compose/scripts/down.sh` / `docker-compose/scripts/logs.sh`** — one-liner shortcuts wrapping `dc.sh`
 - **`docker-compose/scripts/validate-env.js`** — checks required vars, format validation (bcrypt, domain, port), subdomain preview
 - **`docker-compose/scripts/validate-ts.js`** — Tailscale auth key format check + optional expiry lookup via TS API
 - **`docker-compose/scripts/validate-compose.js`** — runs `docker compose config` across all 4 files to catch YAML errors
 - **`npm run dockerapp-validate:all`** — combined validation pipeline (env → compose → TS)
 - **`docs/DEPLOY.md`** — full deployment guide with mermaid flow diagrams, use cases, security checklist
-- Subdomain auto-convention: all routes derived from `${RCLONE_MANAGER_PROJECT_NAME}.${RCLONE_MANAGER_DOMAIN}` pattern
-- `RCLONE_MANAGER_DC_VERBOSE=1` debug flag for `docker-compose/scripts/dc.sh`
-- `RCLONE_MANAGER_HEALTH_PATH` env to customise healthcheck endpoint per image
+- Subdomain auto-convention: all routes derived from `${PROJECT_NAME}.${DOMAIN}` pattern
+- `DC_VERBOSE=1` debug flag for `docker-compose/scripts/dc.sh`
+- `HEALTH_PATH` env to customise healthcheck endpoint per image
 
 ### Changed
 
 - Image versions pinned (caddy `2.9.1-alpine`, cloudflared `2025.1.0`, dozzle `v8.x`, filebrowser `v2.30.0`, tailscale `stable`)
-- Caddy `CADDY_INGRESS_NETWORKS` now uses `${RCLONE_MANAGER_PROJECT_NAME}_net` (was `app_net`)
-- Network name: `${RCLONE_MANAGER_PROJECT_NAME:-mystack}_net` (dynamic, avoids conflicts between stacks)
+- Caddy `CADDY_INGRESS_NETWORKS` now uses `${PROJECT_NAME}_net` (was `app_net`)
+- Network name: `${PROJECT_NAME:-mystack}_net` (dynamic, avoids conflicts between stacks)
 - GitHub Actions and Azure Pipelines updated to call `docker-compose/scripts/dc.sh up` instead of bare `docker compose up`
 - `detect-os.sh` no longer writes `COMPOSE_PROFILES` (profiles now fully managed by `docker-compose/scripts/dc.sh`)
 - `.env.example` fully rewritten to match new schema
@@ -41,8 +41,8 @@
 
 - Monolithic `docker-compose.yml` (replaced by 4 module files)
 - `SUBDOMAIN_APP`, `SUBDOMAIN_DOZZLE`, `SUBDOMAIN_FILEBROWSER`, `SUBDOMAIN_WEBSSH` env vars
-- `TAILSCALE_CLIENT_SECRET` (use `RCLONE_MANAGER_TAILSCALE_AUTHKEY`)
-- Hardcoded `build: ./services/app` in compose (now `RCLONE_MANAGER_APP_IMAGE` param)
+- `TAILSCALE_CLIENT_SECRET` (use `TAILSCALE_AUTHKEY`)
+- Hardcoded `build: ./services/app` in compose (now `APP_IMAGE` param)
 - `scripts/generate-cf-config.js` and the generated-config workflow (maintain `cloudflared/config.yml` manually)
 
 ---

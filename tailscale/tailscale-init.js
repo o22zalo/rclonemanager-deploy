@@ -3,7 +3,7 @@
 //  tailscale/tailscale-init.js
 //  Ensures tags from .env exist in Tailscale ACL tagOwners (merge-only),
 //  optionally mirrors tagOwners to a local ACL JSON/HuJSON file, and
-//  renders tailscale/serve.json from RCLONE_MANAGER_PROJECT_NAME_TAILSCALE + RCLONE_MANAGER_TAILSCALE_TAILNET_DOMAIN,
+//  renders tailscale/serve.json from PROJECT_NAME_TAILSCALE + TAILSCALE_TAILNET_DOMAIN,
 //  and enables HTTPS in Tailnet settings when not already enabled.
 //
 //  Usage:
@@ -14,29 +14,29 @@
 //    node tailscale/tailscale-init.js .env --remove-hostname --yes
 //
 //  Required in target .env (or process env):
-//    RCLONE_MANAGER_TAILSCALE_CLIENTID
+//    TAILSCALE_CLIENTID
 //      - OAuth client ID (for example: kFhHFn4CBE11CNTRL)
-//    RCLONE_MANAGER_TAILSCALE_AUTHKEY
+//    TAILSCALE_AUTHKEY
 //      - OAuth client secret (tskey-client-...)
 //
 //  Required for default init flow:
-//    RCLONE_MANAGER_TAILSCALE_TAGS
+//    TAILSCALE_TAGS
 //      - Comma-separated tags to ensure exist in tagOwners
-//    RCLONE_MANAGER_PROJECT_NAME_TAILSCALE
+//    PROJECT_NAME_TAILSCALE
 //      - Hostname prefix to render in tailscale/serve.json
-//    RCLONE_MANAGER_TAILSCALE_TAILNET_DOMAIN
+//    TAILSCALE_TAILNET_DOMAIN
 //      - Tailnet domain suffix to render in tailscale/serve.json
 //
 //  Required for --remove-hostname flow:
-//    RCLONE_MANAGER_PROJECT_NAME
+//    PROJECT_NAME
 //      - Device hostname to remove from tailnet
 //
 //  Optional:
-//    RCLONE_MANAGER_TAILSCALE_TS_TAILNET      - Tailnet identifier for API calls (default: -)
-//    RCLONE_MANAGER_TAILSCALE_TAG_OWNERS      - Owners for newly created tags (default: autogroup:admin)
-//    RCLONE_MANAGER_TAILSCALE_ACL_JSON_PATH   - Local ACL JSON/HuJSON file to merge tags into
-//    RCLONE_MANAGER_TAILSCALE_SERVE_JSON_PATH - Local serve config path (default: ./tailscale/serve.json)
-//    RCLONE_MANAGER_TAILSCALE_SERVE_PROXY     - Local upstream URL (default: http://127.0.0.1:80)
+//    TAILSCALE_TS_TAILNET      - Tailnet identifier for API calls (default: -)
+//    TAILSCALE_TAG_OWNERS      - Owners for newly created tags (default: autogroup:admin)
+//    TAILSCALE_ACL_JSON_PATH   - Local ACL JSON/HuJSON file to merge tags into
+//    TAILSCALE_SERVE_JSON_PATH - Local serve config path (default: ./tailscale/serve.json)
+//    TAILSCALE_SERVE_PROXY     - Local upstream URL (default: http://127.0.0.1:80)
 // ================================================================
 "use strict";
 
@@ -462,72 +462,72 @@ async function main() {
   const errors = [];
   const inputValue = (key) => process.env[key] || getEnvValue(envMap, key);
 
-  const tailscaleAuthKey = inputValue("RCLONE_MANAGER_TAILSCALE_AUTHKEY").trim();
-  const tailscaleClientId = inputValue("RCLONE_MANAGER_TAILSCALE_CLIENTID").trim();
-  const tailnetFromNew = inputValue("RCLONE_MANAGER_TAILSCALE_TS_TAILNET");
-  const tailnetFromLegacy = inputValue("RCLONE_MANAGER_TS_TAILNET");
+  const tailscaleAuthKey = inputValue("TAILSCALE_AUTHKEY").trim();
+  const tailscaleClientId = inputValue("TAILSCALE_CLIENTID").trim();
+  const tailnetFromNew = inputValue("TAILSCALE_TS_TAILNET");
+  const tailnetFromLegacy = inputValue("TS_TAILNET");
   const tailnet = tailnetFromNew || tailnetFromLegacy || "-";
-  const projectName = inputValue("RCLONE_MANAGER_PROJECT_NAME").trim();
-  const projectNameTailscale = trimHostDots(inputValue("RCLONE_MANAGER_PROJECT_NAME_TAILSCALE"));
-  const tailnetDomainForServe = trimHostDots(inputValue("RCLONE_MANAGER_TAILSCALE_TAILNET_DOMAIN"));
-  const aclFilePathRaw = inputValue("RCLONE_MANAGER_TAILSCALE_ACL_JSON_PATH");
-  const serveFilePathRaw = (inputValue("RCLONE_MANAGER_TAILSCALE_SERVE_JSON_PATH") || "./tailscale/serve.json").trim();
-  const serveProxy = (inputValue("RCLONE_MANAGER_TAILSCALE_SERVE_PROXY") || "http://127.0.0.1:80").trim();
+  const projectName = inputValue("PROJECT_NAME").trim();
+  const projectNameTailscale = trimHostDots(inputValue("PROJECT_NAME_TAILSCALE"));
+  const tailnetDomainForServe = trimHostDots(inputValue("TAILSCALE_TAILNET_DOMAIN"));
+  const aclFilePathRaw = inputValue("TAILSCALE_ACL_JSON_PATH");
+  const serveFilePathRaw = (inputValue("TAILSCALE_SERVE_JSON_PATH") || "./tailscale/serve.json").trim();
+  const serveProxy = (inputValue("TAILSCALE_SERVE_PROXY") || "http://127.0.0.1:80").trim();
 
-  const requiredTagsRaw = parseCsv(inputValue("RCLONE_MANAGER_TAILSCALE_TAGS"));
+  const requiredTagsRaw = parseCsv(inputValue("TAILSCALE_TAGS"));
   const requiredTags = uniqueStable(requiredTagsRaw.filter(isTag));
   const invalidTags = uniqueStable(requiredTagsRaw.filter((t) => !isTag(t)));
 
-  const defaultOwnersRaw = parseCsv(inputValue("RCLONE_MANAGER_TAILSCALE_TAG_OWNERS") || "autogroup:admin");
+  const defaultOwnersRaw = parseCsv(inputValue("TAILSCALE_TAG_OWNERS") || "autogroup:admin");
   const defaultOwners = uniqueStable(defaultOwnersRaw.filter(Boolean));
 
   if (!tailscaleAuthKey) {
-    errors.push("Missing RCLONE_MANAGER_TAILSCALE_AUTHKEY.");
+    errors.push("Missing TAILSCALE_AUTHKEY.");
   } else if (!tailscaleAuthKey.startsWith("tskey-client-")) {
-    warnings.push("RCLONE_MANAGER_TAILSCALE_AUTHKEY should be tskey-client-... for tailscale-init API flow.");
+    warnings.push("TAILSCALE_AUTHKEY should be tskey-client-... for tailscale-init API flow.");
   }
 
   if (!tailscaleClientId) {
-    errors.push("Missing RCLONE_MANAGER_TAILSCALE_CLIENTID.");
+    errors.push("Missing TAILSCALE_CLIENTID.");
   }
   if (tailscaleClientId && !/^[A-Za-z0-9]+$/.test(tailscaleClientId)) {
-    warnings.push(`RCLONE_MANAGER_TAILSCALE_CLIENTID contains unusual characters: ${tailscaleClientId}`);
+    warnings.push(`TAILSCALE_CLIENTID contains unusual characters: ${tailscaleClientId}`);
   }
 
   if (!tailnet) {
-    errors.push("Unable to determine tailnet value (RCLONE_MANAGER_TAILSCALE_TS_TAILNET).");
+    errors.push("Unable to determine tailnet value (TAILSCALE_TS_TAILNET).");
   }
 
   if (!tailnetFromNew && tailnetFromLegacy) {
-    warnings.push("Using deprecated RCLONE_MANAGER_TS_TAILNET. Please migrate to RCLONE_MANAGER_TAILSCALE_TS_TAILNET.");
+    warnings.push("Using deprecated TS_TAILNET. Please migrate to TAILSCALE_TS_TAILNET.");
   }
 
   if (removeHostnameMode) {
     if (!projectName) {
-      errors.push("Missing RCLONE_MANAGER_PROJECT_NAME. --remove-hostname requires RCLONE_MANAGER_PROJECT_NAME in process.env or .env.");
+      errors.push("Missing PROJECT_NAME. --remove-hostname requires PROJECT_NAME in process.env or .env.");
     }
   } else {
     if (!projectNameTailscale) {
-      errors.push("Missing RCLONE_MANAGER_PROJECT_NAME_TAILSCALE. Required to generate tailscale serve hostname.");
+      errors.push("Missing PROJECT_NAME_TAILSCALE. Required to generate tailscale serve hostname.");
     }
     if (!tailnetDomainForServe) {
-      errors.push("Missing RCLONE_MANAGER_TAILSCALE_TAILNET_DOMAIN. Required to generate tailscale serve hostname.");
+      errors.push("Missing TAILSCALE_TAILNET_DOMAIN. Required to generate tailscale serve hostname.");
     } else if (!isLikelyDomain(tailnetDomainForServe)) {
-      warnings.push(`RCLONE_MANAGER_TAILSCALE_TAILNET_DOMAIN may be invalid: ${tailnetDomainForServe}`);
+      warnings.push(`TAILSCALE_TAILNET_DOMAIN may be invalid: ${tailnetDomainForServe}`);
     }
     if (!requiredTags.length) {
-      errors.push("RCLONE_MANAGER_TAILSCALE_TAGS is empty or invalid. Provide one or more tags (example: tag:ci,tag:container).");
+      errors.push("TAILSCALE_TAGS is empty or invalid. Provide one or more tags (example: tag:ci,tag:container).");
     }
     if (invalidTags.length) {
       warnings.push(`Ignoring invalid tag format(s): ${invalidTags.join(", ")}`);
     }
     if (!defaultOwners.length) {
-      errors.push("RCLONE_MANAGER_TAILSCALE_TAG_OWNERS is empty. Example: autogroup:admin");
+      errors.push("TAILSCALE_TAG_OWNERS is empty. Example: autogroup:admin");
     }
   }
 
   if (!removeHostnameMode && !isLikelyHttpUrl(serveProxy)) {
-    errors.push(`RCLONE_MANAGER_TAILSCALE_SERVE_PROXY is invalid: ${serveProxy}`);
+    errors.push(`TAILSCALE_SERVE_PROXY is invalid: ${serveProxy}`);
   }
 
   console.log(`\n🔧  Tailscale Init ${removeHostnameMode ? "(remove-hostname)" : "(merge-only)"}\n`);
@@ -553,9 +553,9 @@ async function main() {
     if (tokenRes.status === 200 && tokenRes.body && tokenRes.body.access_token) {
       accessToken = tokenRes.body.access_token;
     } else if (tokenRes.status === 400) {
-      errors.push("OAuth token request failed (400). Check RCLONE_MANAGER_TAILSCALE_CLIENTID + RCLONE_MANAGER_TAILSCALE_AUTHKEY format.");
+      errors.push("OAuth token request failed (400). Check TAILSCALE_CLIENTID + TAILSCALE_AUTHKEY format.");
     } else if (tokenRes.status === 401 || tokenRes.status === 403) {
-      errors.push("OAuth token request was unauthorized. Verify RCLONE_MANAGER_TAILSCALE_CLIENTID + RCLONE_MANAGER_TAILSCALE_AUTHKEY.");
+      errors.push("OAuth token request was unauthorized. Verify TAILSCALE_CLIENTID + TAILSCALE_AUTHKEY.");
     } else {
       errors.push(`OAuth token request failed: HTTP ${tokenRes.status}.`);
     }
@@ -769,7 +769,7 @@ async function main() {
     aclFileExists = fs.existsSync(aclFileResolved);
 
     if (!aclFileExists) {
-      warnings.push(`RCLONE_MANAGER_TAILSCALE_ACL_JSON_PATH not found: ${aclFileResolved}`);
+      warnings.push(`TAILSCALE_ACL_JSON_PATH not found: ${aclFileResolved}`);
     } else {
       try {
         const aclText = fs.readFileSync(aclFileResolved, "utf-8");
