@@ -108,6 +108,7 @@ function normalizeConfigRecord(cfg, token, options = {}) {
     appDataFolder: Boolean(cfg.googleRootFolderMode === 'appDataFolder' || cfg.appDataFolder),
     authType: cfg.authType || options.authType || 'oauth',
     credentialPresetId: cfg.presetId || cfg.credentialPresetId || options.credentialPresetId || '',
+    credentialPresetLabel: cfg.presetLabel || cfg.credentialPresetLabel || options.credentialPresetLabel || '',
     lastChecked: options.lastChecked ?? null,
     storageUsed: options.storageUsed ?? null,
     storageTotal: options.storageTotal ?? null,

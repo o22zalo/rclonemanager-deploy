@@ -791,6 +791,10 @@
   overflow-wrap: anywhere;
 }
 
+.metric__value--wrap {
+  overflow-wrap: anywhere;
+}
+
 .modal {
   position: fixed;
   inset: 0;

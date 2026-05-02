@@ -33,6 +33,7 @@
   let authUrl = '';
   let lastManualRecord = null;
   let pendingManualExchange = null;
+  let lastOauthContext = {};
 
   function $(id) {
     return document.getElementById(id);
@@ -91,6 +92,7 @@
       clientId: cfg.clientId,
       clientSecret: cfg.presetId ? '' : (cfg.clientSecret || ''),
       presetId: cfg.presetId || '',
+      presetLabel: cfg.presetLabel || '',
       emailOwner: b64Utf8(emailOwner),
       provider: cfg.provider,
       remoteName: cfg.remoteName,
@@ -133,10 +135,47 @@
     }
   }
 
+  function presetLabelFromSource(source = {}) {
+    const explicit = String(
+      source.presetLabel
+      || source.preset_label
+      || source.credentialPresetLabel
+      || source.credentialPresetName
+      || ''
+    ).trim();
+    if (explicit) return explicit;
+
+    const presetId = String(source.presetId || source.preset_id || source.credentialPresetId || '').trim();
+    const sourceProvider = String(source.provider || provider || '').trim();
+    const sourceClientId = normalizedClientId(source.clientId);
+    const presets = [
+      ...(window.App.state.presets || []),
+      ...(BUILTIN_PRESETS[sourceProvider] || []),
+    ];
+
+    if (presetId) {
+      const byId = presets.find((preset) => String(preset.id || '') === presetId);
+      if (byId?.label) return byId.label;
+    }
+
+    if (sourceClientId) {
+      const byClientId = presets.find((preset) =>
+        (!sourceProvider || String(preset.provider || sourceProvider) === sourceProvider)
+        && normalizedClientId(preset.clientId) === sourceClientId);
+      if (byClientId?.label) return byClientId.label;
+    }
+
+    return presetId ? `Preset ${presetId}` : 'Custom App';
+  }
+
   function oauthIdentityFrom(source = {}) {
+    if (Object.keys(source || {}).length === 0) {
+      return { clientId: '', emailOwner: '', presetLabel: '' };
+    }
     return {
       clientId: String(source.clientId || '').trim(),
       emailOwner: String(source.emailOwner || source.email_owner || '').trim(),
+      presetLabel: presetLabelFromSource(source),
     };
   }
 
@@ -146,11 +185,14 @@
   }
 
   function renderOauthIdentity(source = {}) {
+    lastOauthContext = { ...source };
     const identity = oauthIdentityFrom(source);
     setText('oauthExchangeClientId', identity.clientId);
     setText('oauthExchangeEmailOwner', identity.emailOwner);
+    setText('oauthExchangePresetLabel', identity.presetLabel);
     setText('oauthResultClientId', identity.clientId);
     setText('oauthResultEmailOwner', identity.emailOwner);
+    setText('oauthResultPresetLabel', identity.presetLabel);
   }
 
   function remoteNameFromEmail(email) {
@@ -426,6 +468,7 @@
       const data = await window.App.api.request('/api/oauth/presets');
       window.App.state.presets = data.items || [];
       renderPresetOptions();
+      if (Object.keys(lastOauthContext).length > 0) renderOauthIdentity(lastOauthContext);
       if (!applyUrlParams()) applySelectedPreset();
     } catch (err) {
       window.App.utils.toast(`Không tải được OAuth presets: ${err.message}`, true);

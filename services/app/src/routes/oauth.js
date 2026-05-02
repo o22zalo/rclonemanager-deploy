@@ -109,6 +109,7 @@ function configWithPresetSecret(cfg, preset) {
   return sanitizeOAuthConfig({
     ...cfg,
     presetId: cfg.presetId || preset.id || '',
+    presetLabel: cfg.presetLabel || preset.label || '',
     clientId: preset.clientId || cfg.clientId,
     clientSecret: cfg.clientSecret || decryptIfConfigured(preset.clientSecret || ''),
     redirectUri: cfg.redirectUri || preset.redirectUri || '',

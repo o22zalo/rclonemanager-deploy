@@ -57,6 +57,7 @@ function parseStateParam(state) {
     clientId: String(payload.clientId),
     clientSecret: payload.clientSecret ? String(payload.clientSecret) : '',
     presetId: payload.presetId ? String(payload.presetId) : '',
+    presetLabel: payload.presetLabel ? String(payload.presetLabel) : '',
     emailOwner: decodeEmail(emailOwnerValue),
     provider: payload.provider,
     remoteName: String(payload.remoteName || ''),
