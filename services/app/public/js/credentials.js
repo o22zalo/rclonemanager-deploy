@@ -383,8 +383,7 @@
   }
 
   async function handleCredentialFileSelect(event) {
-    // const input = event.currentTarget;
-    const input = event.target; // ← đổi từ currentTarget sang target
+    const input = event.currentTarget;
     const file = input.files?.[0];
     if (!file) return;
     const button = $("selectCredentialFileBtn");
@@ -432,12 +431,8 @@
         failureMessage: "Không parse được Client ID/Secret, vui lòng dán rõ hơn.",
       });
     });
-    // $('selectCredentialFileBtn')?.addEventListener('click', () => $('credentialFileInput')?.click());
-    // $("credentialFileInput")?.addEventListener("change", handleCredentialFileSelect);
-    // Bằng:
-    document.addEventListener("change", (e) => {
-      if (e.target.id === "credentialFileInput") handleCredentialFileSelect(e);
-    });
+    $("selectCredentialFileBtn")?.addEventListener("click", () => $("credentialFileInput")?.click());
+    $("credentialFileInput")?.addEventListener("change", handleCredentialFileSelect);
     $("credentialsTableBody")?.addEventListener("click", (event) => {
       const button = event.target.closest("button[data-action]");
       if (!button) return;
