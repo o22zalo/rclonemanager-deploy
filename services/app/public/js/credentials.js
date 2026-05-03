@@ -1,55 +1,57 @@
 (function () {
-  const CACHE_KEY = 'credentials-presets-cache';
-  const VIEW_KEY = 'credentials-view-mode';
-  const RCLONE_GDRIVE_CLIENT_ID = '202264815644.apps.googleusercontent.com';
-  const RCLONE_GDRIVE_CLIENT_SECRET = 'X4Z3ca8xfWDb1Voo-F9a7ZxJ';
-  const RCLONE_ONEDRIVE_CLIENT_ID = 'b15665d9-eda6-4092-8539-0eec376afd59';
-  const RCLONE_ONEDRIVE_CLIENT_SECRET = 'qtyfaBBYA403=unZUP40~_#';
-  const ONEDRIVE_OAUTH_SCOPE = 'https://graph.microsoft.com/Files.ReadWrite https://graph.microsoft.com/User.Read offline_access';
+  const CACHE_KEY = "credentials-presets-cache";
+  const VIEW_KEY = "credentials-view-mode";
+  const RCLONE_GDRIVE_CLIENT_ID = "202264815644.apps.googleusercontent.com";
+  const RCLONE_GDRIVE_CLIENT_SECRET = "X4Z3ca8xfWDb1Voo-F9a7ZxJ";
+  const RCLONE_ONEDRIVE_CLIENT_ID = "b15665d9-eda6-4092-8539-0eec376afd59";
+  const RCLONE_ONEDRIVE_CLIENT_SECRET = "qtyfaBBYA403=unZUP40~_#";
+  const ONEDRIVE_OAUTH_SCOPE = "https://graph.microsoft.com/Files.ReadWrite https://graph.microsoft.com/User.Read offline_access";
   const AZURE_SECRET_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const revealedSecrets = new Set();
-  let credentialViewMode = normalizeViewMode(localStorage.getItem(VIEW_KEY) || 'list');
+  let credentialViewMode = normalizeViewMode(localStorage.getItem(VIEW_KEY) || "list");
 
   function $(id) {
     return document.getElementById(id);
   }
 
   function providerLabel(provider) {
-    return provider === 'gd' ? 'Google Drive' : 'OneDrive';
+    return provider === "gd" ? "Google Drive" : "OneDrive";
   }
 
   function normalizeViewMode(value) {
-    return ['list', 'card', 'grid'].includes(value) ? value : 'list';
+    return ["list", "card", "grid"].includes(value) ? value : "list";
   }
 
   function applyCredentialViewMode() {
     const mode = normalizeViewMode(credentialViewMode);
-    const wrap = $('credentialsTableWrap');
+    const wrap = $("credentialsTableWrap");
     if (wrap) {
-      wrap.classList.remove('credentials-view-list', 'credentials-view-card', 'credentials-view-grid');
+      wrap.classList.remove("credentials-view-list", "credentials-view-card", "credentials-view-grid");
       wrap.classList.add(`credentials-view-${mode}`);
     }
-    document.querySelectorAll('[data-credential-view]').forEach((button) => {
+    document.querySelectorAll("[data-credential-view]").forEach((button) => {
       const active = button.dataset.credentialView === mode;
-      button.classList.toggle('view-switch__button--active', active);
-      button.setAttribute('aria-pressed', String(active));
+      button.classList.toggle("view-switch__button--active", active);
+      button.setAttribute("aria-pressed", String(active));
     });
   }
 
   function normalizeClientId(value) {
-    return String(value || '').trim().toLowerCase();
+    return String(value || "")
+      .trim()
+      .toLowerCase();
   }
 
   function isRcloneOneDrivePublicClient(preset) {
-    return preset.provider === 'od' && normalizeClientId(preset.clientId) === RCLONE_ONEDRIVE_CLIENT_ID;
+    return preset.provider === "od" && normalizeClientId(preset.clientId) === RCLONE_ONEDRIVE_CLIENT_ID;
   }
 
   function isRcloneGDrivePublicClient(preset) {
-    return preset.provider === 'gd' && normalizeClientId(preset.clientId) === RCLONE_GDRIVE_CLIENT_ID;
+    return preset.provider === "gd" && normalizeClientId(preset.clientId) === RCLONE_GDRIVE_CLIENT_ID;
   }
 
   function looksLikeAzureSecretId(value) {
-    return AZURE_SECRET_ID_RE.test(String(value || '').trim());
+    return AZURE_SECRET_ID_RE.test(String(value || "").trim());
   }
 
   function cachePresets(items) {
@@ -58,7 +60,7 @@
 
   function readCachedPresets() {
     try {
-      return JSON.parse(localStorage.getItem(CACHE_KEY) || '[]');
+      return JSON.parse(localStorage.getItem(CACHE_KEY) || "[]");
     } catch (_err) {
       return [];
     }
@@ -66,7 +68,7 @@
 
   async function loadPresets() {
     try {
-      const data = await window.App.api.request('/api/presets');
+      const data = await window.App.api.request("/api/presets");
       window.App.state.presets = data.items || [];
       cachePresets(window.App.state.presets);
     } catch (err) {
@@ -80,28 +82,29 @@
   }
 
   function renderPresetsTable() {
-    const tbody = $('credentialsTableBody');
+    const tbody = $("credentialsTableBody");
     if (!tbody) return;
     const presets = window.App.state.presets || [];
     if (presets.length === 0) {
       tbody.innerHTML = '<tr><td colspan="7" class="text-tertiary">Chưa có preset.</td></tr>';
       return;
     }
-    tbody.innerHTML = presets.map((preset) => {
-      const secretVisible = revealedSecrets.has(preset.id);
-      const secret = preset.clientSecret || '';
-      const displaySecret = secretVisible ? escapeHtml(secret || '(empty)') : '••••••••';
-      const configCount = Number(preset.configCount || 0);
-      const countedTitle = preset.configCountedAt
-        ? `Counted at ${window.App.utils.formatDate(preset.configCountedAt)}`
-        : 'Count has not been recounted yet';
-      return `
+    tbody.innerHTML = presets
+      .map((preset) => {
+        const secretVisible = revealedSecrets.has(preset.id);
+        const secret = preset.clientSecret || "";
+        const displaySecret = secretVisible ? escapeHtml(secret || "(empty)") : "••••••••";
+        const configCount = Number(preset.configCount || 0);
+        const countedTitle = preset.configCountedAt
+          ? `Counted at ${window.App.utils.formatDate(preset.configCountedAt)}`
+          : "Count has not been recounted yet";
+        return `
         <tr>
           <td data-label="Label"><strong>${escapeHtml(preset.label)}</strong></td>
-          <td data-label="Provider"><span class="badge ${preset.provider === 'gd' ? 'badge--blue' : 'badge--purple'}">${providerLabel(preset.provider)}</span></td>
+          <td data-label="Provider"><span class="badge ${preset.provider === "gd" ? "badge--blue" : "badge--purple"}">${providerLabel(preset.provider)}</span></td>
           <td data-label="Client ID"><code>${escapeHtml(compact(preset.clientId))}</code></td>
           <td data-label="Secret">${displaySecret}</td>
-          <td data-label="Redirect URI"><code>${escapeHtml(preset.redirectUri || '')}</code></td>
+          <td data-label="Redirect URI"><code>${escapeHtml(preset.redirectUri || "")}</code></td>
           <td data-label="Configs"><button type="button" class="btn btn--secondary btn--sm" data-action="view-configs" data-id="${preset.id}" title="${escapeHtml(countedTitle)}">${configCount} configs</button></td>
           <td data-label="Actions">
             <div class="table__actions">
@@ -113,53 +116,54 @@
             </div>
           </td>
         </tr>`;
-    }).join('');
+      })
+      .join("");
     applyCredentialViewMode();
   }
 
   function escapeHtml(value) {
-    return String(value || '')
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&#039;');
+    return String(value || "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
   }
 
   function compact(value) {
-    const text = String(value || '');
+    const text = String(value || "");
     if (text.length <= 32) return text;
     return `${text.slice(0, 16)}...${text.slice(-8)}`;
   }
 
   function openModal(preset) {
-    $('credentialId').value = preset?.id || '';
-    $('credentialLabel').value = preset?.label || '';
-    $('credentialProvider').value = preset?.provider || 'gd';
-    $('credentialClientId').value = preset?.clientId || '';
-    $('credentialClientSecret').value = preset?.clientSecret || '';
-    $('credentialClientSecret').type = 'password';
-    $('credentialRedirectUri').value = preset?.redirectUri || `${window.App.api.baseUrl}/`;
-    $('credentialModal').classList.add('modal--open');
-    $('credentialLabel').focus();
+    $("credentialId").value = preset?.id || "";
+    $("credentialLabel").value = preset?.label || "";
+    $("credentialProvider").value = preset?.provider || "gd";
+    $("credentialClientId").value = preset?.clientId || "";
+    $("credentialClientSecret").value = preset?.clientSecret || "";
+    $("credentialClientSecret").type = "password";
+    $("credentialRedirectUri").value = preset?.redirectUri || `${window.App.api.baseUrl}/`;
+    $("credentialModal").classList.add("modal--open");
+    $("credentialLabel").focus();
   }
 
   function closeModal() {
-    $('credentialModal').classList.remove('modal--open');
+    $("credentialModal").classList.remove("modal--open");
   }
 
   async function submitPreset(event) {
     event.preventDefault();
-    const id = $('credentialId').value;
+    const id = $("credentialId").value;
     let payload = {
-      label: $('credentialLabel').value.trim(),
-      provider: $('credentialProvider').value,
-      clientId: $('credentialClientId').value.trim(),
-      clientSecret: $('credentialClientSecret').value,
-      redirectUri: $('credentialRedirectUri').value.trim() || `${window.App.api.baseUrl}/`,
+      label: $("credentialLabel").value.trim(),
+      provider: $("credentialProvider").value,
+      clientId: $("credentialClientId").value.trim(),
+      clientSecret: $("credentialClientSecret").value,
+      redirectUri: $("credentialRedirectUri").value.trim() || `${window.App.api.baseUrl}/`,
     };
     if (!payload.label || !payload.clientId) {
-      window.App.utils.toast('Label và Client ID là bắt buộc.', true);
+      window.App.utils.toast("Label và Client ID là bắt buộc.", true);
       return;
     }
     if (isRcloneGDrivePublicClient(payload)) {
@@ -167,29 +171,29 @@
     } else if (isRcloneOneDrivePublicClient(payload)) {
       payload = { ...payload, clientSecret: RCLONE_ONEDRIVE_CLIENT_SECRET };
     } else if (payload.clientSecret && looksLikeAzureSecretId(payload.clientSecret)) {
-      window.App.utils.toast('Client Secret đang giống Azure Secret ID. Hãy copy cột Value trong Azure Certificates & secrets.', true);
+      window.App.utils.toast("Client Secret đang giống Azure Secret ID. Hãy copy cột Value trong Azure Certificates & secrets.", true);
       return;
     }
 
     try {
-      await window.App.api.request(id ? `/api/presets/${id}` : '/api/presets', {
-        method: id ? 'PUT' : 'POST',
+      await window.App.api.request(id ? `/api/presets/${id}` : "/api/presets", {
+        method: id ? "PUT" : "POST",
         body: JSON.stringify(payload),
       });
       closeModal();
       await loadPresets();
-      window.App.utils.toast('Đã lưu preset.');
+      window.App.utils.toast("Đã lưu preset.");
     } catch (err) {
       window.App.utils.toast(`Không lưu được preset: ${err.message}`, true);
     }
   }
 
   async function deletePreset(id) {
-    if (!confirm('Xóa preset này?')) return;
+    if (!confirm("Xóa preset này?")) return;
     try {
-      await window.App.api.request(`/api/presets/${id}`, { method: 'DELETE' });
+      await window.App.api.request(`/api/presets/${id}`, { method: "DELETE" });
       await loadPresets();
-      window.App.utils.toast('Đã xóa preset.');
+      window.App.utils.toast("Đã xóa preset.");
     } catch (err) {
       window.App.utils.toast(`Không xóa được preset: ${err.message}`, true);
     }
@@ -197,26 +201,26 @@
 
   async function recountPreset(id) {
     try {
-      const preset = await window.App.api.request(`/api/presets/${id}/recount`, { method: 'POST' });
+      const preset = await window.App.api.request(`/api/presets/${id}/recount`, { method: "POST" });
       window.App.state.presets = (window.App.state.presets || []).map((item) => (item.id === id ? preset : item));
       cachePresets(window.App.state.presets);
       renderPresetsTable();
-      window.App.utils.toast('Đã đếm lại configs dùng credential này.');
+      window.App.utils.toast("Đã đếm lại configs dùng credential này.");
     } catch (err) {
       window.App.utils.toast(`Không đếm lại được: ${err.message}`, true);
     }
   }
 
   async function recountAllPresets() {
-    const button = $('recountCredentialsBtn');
+    const button = $("recountCredentialsBtn");
     if (button) button.disabled = true;
     try {
-      const data = await window.App.api.request('/api/presets/recount', { method: 'POST' });
+      const data = await window.App.api.request("/api/presets/recount", { method: "POST" });
       window.App.state.presets = data.items || [];
       cachePresets(window.App.state.presets);
       renderPresetsTable();
       window.App.OAuth?.renderPresetOptions();
-      window.App.utils.toast('Đã đếm lại configs cho tất cả presets.');
+      window.App.utils.toast("Đã đếm lại configs cho tất cả presets.");
     } catch (err) {
       window.App.utils.toast(`Không đếm lại được: ${err.message}`, true);
     } finally {
@@ -229,21 +233,25 @@
     try {
       const data = await window.App.api.request(`/api/presets/${id}/configs`);
       const items = data.items || [];
-      $('credentialUsageModalTitle').textContent = `${preset?.label || 'Credential'} · ${items.length} configs`;
-      const tbody = $('credentialUsageTableBody');
+      $("credentialUsageModalTitle").textContent = `${preset?.label || "Credential"} · ${items.length} configs`;
+      const tbody = $("credentialUsageTableBody");
       if (tbody) {
         tbody.innerHTML = items.length
-          ? items.map((config) => `
+          ? items
+              .map(
+                (config) => `
             <tr>
               <td><strong>${escapeHtml(config.remoteName)}</strong></td>
               <td>${escapeHtml(providerLabel(config.provider))}</td>
               <td>${escapeHtml(config.emailOwner)}</td>
-              <td><span class="${window.App.utils.statusBadgeClass(config.status)}">${escapeHtml(config.status || 'unknown')}</span></td>
+              <td><span class="${window.App.utils.statusBadgeClass(config.status)}">${escapeHtml(config.status || "unknown")}</span></td>
               <td>${window.App.utils.formatDate(config.updatedAt || config.createdAt)}</td>
-            </tr>`).join('')
+            </tr>`,
+              )
+              .join("")
           : '<tr><td colspan="5" class="text-tertiary">Chưa có config dùng credential này.</td></tr>';
       }
-      $('credentialUsageModal').classList.add('modal--open');
+      $("credentialUsageModal").classList.add("modal--open");
     } catch (err) {
       window.App.utils.toast(`Không tải được danh sách config: ${err.message}`, true);
     }
@@ -254,32 +262,31 @@
     if (!preset) return;
     const redirectUri = preset.redirectUri || `${window.App.api.baseUrl}/`;
     const state = btoa(JSON.stringify({ nonce: Math.random().toString(36).slice(2), test: true }));
-    const url = preset.provider === 'gd'
-      ? `https://accounts.google.com/o/oauth2/v2/auth?${new URLSearchParams({
-        client_id: preset.clientId,
-        redirect_uri: redirectUri,
-        response_type: 'code',
-        scope: 'https://www.googleapis.com/auth/drive.metadata.readonly',
-        access_type: 'offline',
-        prompt: 'consent',
-        state,
-      })}`
-      : `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?${new URLSearchParams({
-        client_id: preset.clientId,
-        redirect_uri: redirectUri,
-        response_type: 'code',
-        scope: ONEDRIVE_OAUTH_SCOPE,
-        response_mode: 'query',
-        state,
-      })}`;
-    window.open(url, '_blank', 'noopener');
+    const url =
+      preset.provider === "gd"
+        ? `https://accounts.google.com/o/oauth2/v2/auth?${new URLSearchParams({
+            client_id: preset.clientId,
+            redirect_uri: redirectUri,
+            response_type: "code",
+            scope: "https://www.googleapis.com/auth/drive.metadata.readonly",
+            access_type: "offline",
+            prompt: "consent",
+            state,
+          })}`
+        : `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?${new URLSearchParams({
+            client_id: preset.clientId,
+            redirect_uri: redirectUri,
+            response_type: "code",
+            scope: ONEDRIVE_OAUTH_SCOPE,
+            response_mode: "query",
+            state,
+          })}`;
+    window.open(url, "_blank", "noopener");
   }
 
-
-
   function parseCredentialsText(raw) {
-    const text = String(raw || '');
-    const picks = { clientId: '', clientSecret: '', provider: '', redirectUri: '' };
+    const text = String(raw || "");
+    const picks = { clientId: "", clientSecret: "", provider: "", redirectUri: "" };
     try {
       collectCredentialFields(JSON.parse(text), picks);
     } catch (_err) {
@@ -291,13 +298,14 @@
       /application\s*\(client\)\s*id["'\s:]+([0-9a-f-]{36})/i,
       /client[_ -]?secret["'=: ]+([A-Za-z0-9~._\-#=]{16,128})/i,
       /secret\s+value["'=: ]+([A-Za-z0-9~._\-#=]{16,128})/i,
-      /"client_secret"\s*:\s*"([^"]{16,128})"/i
+      /"client_secret"\s*:\s*"([^"]{16,128})"/i,
     ];
     for (const re of patterns) {
       const m = text.match(re);
       if (!m) continue;
-      if (!picks.clientId && (m[1].includes('apps.googleusercontent.com') || /^[0-9a-f-]{36}$/i.test(m[1]))) picks.clientId = m[1];
-      if (!picks.clientSecret && m[1].length >= 16 && !/apps\.googleusercontent\.com/i.test(m[1]) && !/^[0-9a-f-]{36}$/i.test(m[1])) picks.clientSecret = m[1];
+      if (!picks.clientId && (m[1].includes("apps.googleusercontent.com") || /^[0-9a-f-]{36}$/i.test(m[1]))) picks.clientId = m[1];
+      if (!picks.clientSecret && m[1].length >= 16 && !/apps\.googleusercontent\.com/i.test(m[1]) && !/^[0-9a-f-]{36}$/i.test(m[1]))
+        picks.clientSecret = m[1];
     }
     const inferredProvider = inferProviderFromClientId(picks.clientId);
     if (inferredProvider) picks.provider = inferredProvider;
@@ -305,7 +313,7 @@
   }
 
   function collectCredentialFields(value, picks) {
-    if (!value || typeof value !== 'object') return;
+    if (!value || typeof value !== "object") return;
     if (Array.isArray(value)) {
       value.forEach((item) => collectCredentialFields(item, picks));
       return;
@@ -313,21 +321,21 @@
 
     const clientId = value.client_id || value.clientId || value.applicationId || value.appId;
     const clientSecret = value.client_secret || value.clientSecret || value.secretValue || value.secretText;
-    if (!picks.clientId && typeof clientId === 'string') picks.clientId = clientId.trim();
-    if (!picks.clientSecret && typeof clientSecret === 'string') picks.clientSecret = clientSecret.trim();
+    if (!picks.clientId && typeof clientId === "string") picks.clientId = clientId.trim();
+    if (!picks.clientSecret && typeof clientSecret === "string") picks.clientSecret = clientSecret.trim();
     if (!picks.redirectUri) {
       let redirectUri = value.redirectUri;
       if (Array.isArray(value.redirect_uris)) redirectUri = value.redirect_uris[0];
       if (Array.isArray(value.redirectUris)) redirectUri = value.redirectUris[0];
-      if (typeof redirectUri === 'string') picks.redirectUri = redirectUri.trim();
+      if (typeof redirectUri === "string") picks.redirectUri = redirectUri.trim();
     }
 
     if (value.web) {
-      picks.provider = picks.provider || 'gd';
+      picks.provider = picks.provider || "gd";
       collectCredentialFields(value.web, picks);
     }
     if (value.installed) {
-      picks.provider = picks.provider || 'gd';
+      picks.provider = picks.provider || "gd";
       collectCredentialFields(value.installed, picks);
     }
 
@@ -335,32 +343,32 @@
   }
 
   function inferProviderFromClientId(clientId) {
-    const value = String(clientId || '');
-    if (/apps\.googleusercontent\.com$/i.test(value)) return 'gd';
-    if (/^[0-9a-f-]{36}$/i.test(value)) return 'od';
-    return '';
+    const value = String(clientId || "");
+    if (/apps\.googleusercontent\.com$/i.test(value)) return "gd";
+    if (/^[0-9a-f-]{36}$/i.test(value)) return "od";
+    return "";
   }
 
   function fileNameToCredentialLabel(fileName) {
-    return String(fileName || '')
-      .replace(/\.[^.]+$/, '')
-      .replace(/[_-]+/g, ' ')
+    return String(fileName || "")
+      .replace(/\.[^.]+$/, "")
+      .replace(/[_-]+/g, " ")
       .trim();
   }
 
   function fillCredentialFormFromParsed(picks, options = {}) {
     if (!picks.clientId && !picks.clientSecret) {
-      window.App.utils.toast(options.failureMessage || 'Không parse được Client ID/Secret, vui lòng chọn hoặc dán dữ liệu rõ hơn.', true);
+      window.App.utils.toast(options.failureMessage || "Không parse được Client ID/Secret, vui lòng chọn hoặc dán dữ liệu rõ hơn.", true);
       return false;
     }
     openModal();
     const provider = picks.provider || inferProviderFromClientId(picks.clientId);
-    if (provider) $('credentialProvider').value = provider;
-    if (picks.clientId) $('credentialClientId').value = picks.clientId;
-    if (picks.clientSecret) $('credentialClientSecret').value = picks.clientSecret;
-    if (picks.redirectUri) $('credentialRedirectUri').value = picks.redirectUri;
-    if (options.label && !$('credentialLabel').value) $('credentialLabel').value = options.label;
-    window.App.utils.toast(options.successMessage || 'Đã parse dữ liệu vào form preset.');
+    if (provider) $("credentialProvider").value = provider;
+    if (picks.clientId) $("credentialClientId").value = picks.clientId;
+    if (picks.clientSecret) $("credentialClientSecret").value = picks.clientSecret;
+    if (picks.redirectUri) $("credentialRedirectUri").value = picks.redirectUri;
+    if (options.label && !$("credentialLabel").value) $("credentialLabel").value = options.label;
+    window.App.utils.toast(options.successMessage || "Đã parse dữ liệu vào form preset.");
     return true;
   }
 
@@ -368,8 +376,8 @@
     if (file.text) return file.text();
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.addEventListener('load', () => resolve(String(reader.result || '')));
-      reader.addEventListener('error', () => reject(reader.error || new Error('Không đọc được file.')));
+      reader.addEventListener("load", () => resolve(String(reader.result || "")));
+      reader.addEventListener("error", () => reject(reader.error || new Error("Không đọc được file.")));
       reader.readAsText(file);
     });
   }
@@ -378,72 +386,72 @@
     const input = event.currentTarget;
     const file = input.files?.[0];
     if (!file) return;
-    const button = $('selectCredentialFileBtn');
+    const button = $("selectCredentialFileBtn");
     if (button) button.disabled = true;
     try {
       const text = await readCredentialFileText(file);
-      const quickPaste = $('credentialQuickPaste');
+      const quickPaste = $("credentialQuickPaste");
       if (quickPaste) quickPaste.value = text;
       fillCredentialFormFromParsed(parseCredentialsText(text), {
         label: fileNameToCredentialLabel(file.name),
-        successMessage: 'Đã đọc file và parse dữ liệu vào form preset.',
-        failureMessage: 'Không parse được Client ID/Secret từ file đã chọn.',
+        successMessage: "Đã đọc file và parse dữ liệu vào form preset.",
+        failureMessage: "Không parse được Client ID/Secret từ file đã chọn.",
       });
     } catch (err) {
       window.App.utils.toast(`Không đọc được file: ${err.message}`, true);
     } finally {
-      input.value = '';
+      input.value = "";
       if (button) button.disabled = false;
     }
   }
 
   function bindEvents() {
-    $('addCredentialBtn')?.addEventListener('click', () => openModal());
-    $('refreshCredentialsBtn')?.addEventListener('click', loadPresets);
-    $('recountCredentialsBtn')?.addEventListener('click', recountAllPresets);
-    document.querySelectorAll('[data-credential-view]').forEach((button) => {
-      button.addEventListener('click', () => {
+    $("addCredentialBtn")?.addEventListener("click", () => openModal());
+    $("refreshCredentialsBtn")?.addEventListener("click", loadPresets);
+    $("recountCredentialsBtn")?.addEventListener("click", recountAllPresets);
+    document.querySelectorAll("[data-credential-view]").forEach((button) => {
+      button.addEventListener("click", () => {
         credentialViewMode = normalizeViewMode(button.dataset.credentialView);
         localStorage.setItem(VIEW_KEY, credentialViewMode);
         applyCredentialViewMode();
       });
     });
-    $('credentialForm')?.addEventListener('submit', submitPreset);
-    $('closeCredentialModalBtn')?.addEventListener('click', closeModal);
-    $('cancelCredentialBtn')?.addEventListener('click', closeModal);
-    $('toggleCredentialSecretBtn')?.addEventListener('click', () => {
-      const input = $('credentialClientSecret');
-      input.type = input.type === 'password' ? 'text' : 'password';
+    $("credentialForm")?.addEventListener("submit", submitPreset);
+    $("closeCredentialModalBtn")?.addEventListener("click", closeModal);
+    $("cancelCredentialBtn")?.addEventListener("click", closeModal);
+    $("toggleCredentialSecretBtn")?.addEventListener("click", () => {
+      const input = $("credentialClientSecret");
+      input.type = input.type === "password" ? "text" : "password";
     });
-    $('credentialModal')?.addEventListener('click', (event) => {
-      if (event.target.id === 'credentialModal') closeModal();
+    $("credentialModal")?.addEventListener("click", (event) => {
+      if (event.target.id === "credentialModal") closeModal();
     });
-    $('parseCredentialQuickBtn')?.addEventListener('click', () => {
-      fillCredentialFormFromParsed(parseCredentialsText($('credentialQuickPaste')?.value), {
-        failureMessage: 'Không parse được Client ID/Secret, vui lòng dán rõ hơn.',
+    $("parseCredentialQuickBtn")?.addEventListener("click", () => {
+      fillCredentialFormFromParsed(parseCredentialsText($("credentialQuickPaste")?.value), {
+        failureMessage: "Không parse được Client ID/Secret, vui lòng dán rõ hơn.",
       });
     });
-    $('selectCredentialFileBtn')?.addEventListener('click', () => $('credentialFileInput')?.click());
-    $('credentialFileInput')?.addEventListener('change', handleCredentialFileSelect);
-    $('credentialsTableBody')?.addEventListener('click', (event) => {
-      const button = event.target.closest('button[data-action]');
+    // $('selectCredentialFileBtn')?.addEventListener('click', () => $('credentialFileInput')?.click());
+    $("credentialFileInput")?.addEventListener("change", handleCredentialFileSelect);
+    $("credentialsTableBody")?.addEventListener("click", (event) => {
+      const button = event.target.closest("button[data-action]");
       if (!button) return;
       const id = button.dataset.id;
       const preset = (window.App.state.presets || []).find((item) => item.id === id);
-      if (button.dataset.action === 'toggle') {
+      if (button.dataset.action === "toggle") {
         if (revealedSecrets.has(id)) revealedSecrets.delete(id);
         else revealedSecrets.add(id);
         renderPresetsTable();
       }
-      if (button.dataset.action === 'test') testPreset(id);
-      if (button.dataset.action === 'recount') recountPreset(id);
-      if (button.dataset.action === 'view-configs') viewCredentialConfigs(id);
-      if (button.dataset.action === 'edit') openModal(preset);
-      if (button.dataset.action === 'delete') deletePreset(id);
+      if (button.dataset.action === "test") testPreset(id);
+      if (button.dataset.action === "recount") recountPreset(id);
+      if (button.dataset.action === "view-configs") viewCredentialConfigs(id);
+      if (button.dataset.action === "edit") openModal(preset);
+      if (button.dataset.action === "delete") deletePreset(id);
     });
-    $('closeCredentialUsageModalBtn')?.addEventListener('click', () => $('credentialUsageModal').classList.remove('modal--open'));
-    $('credentialUsageModal')?.addEventListener('click', (event) => {
-      if (event.target.id === 'credentialUsageModal') $('credentialUsageModal').classList.remove('modal--open');
+    $("closeCredentialUsageModalBtn")?.addEventListener("click", () => $("credentialUsageModal").classList.remove("modal--open"));
+    $("credentialUsageModal")?.addEventListener("click", (event) => {
+      if (event.target.id === "credentialUsageModal") $("credentialUsageModal").classList.remove("modal--open");
     });
   }
 
