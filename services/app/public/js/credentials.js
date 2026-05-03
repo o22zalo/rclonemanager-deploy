@@ -383,7 +383,8 @@
   }
 
   async function handleCredentialFileSelect(event) {
-    const input = event.currentTarget;
+    // const input = event.currentTarget;
+    const input = event.target; // ← đổi từ currentTarget sang target
     const file = input.files?.[0];
     if (!file) return;
     const button = $("selectCredentialFileBtn");
