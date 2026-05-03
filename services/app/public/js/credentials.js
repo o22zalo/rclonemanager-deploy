@@ -279,12 +279,18 @@
 
   function parseCredentialsText(raw) {
     const text = String(raw || '');
-    const picks = { clientId: '', clientSecret: '' };
+    const picks = { clientId: '', clientSecret: '', provider: '', redirectUri: '' };
+    try {
+      collectCredentialFields(JSON.parse(text), picks);
+    } catch (_err) {
+      // Free-form paste is expected here; regex parsing below handles non-JSON text.
+    }
     const patterns = [
       /client[_ -]?id["'=: ]+([a-z0-9._-]{12,}\.apps\.googleusercontent\.com)/i,
       /client[_ -]?id["'=: ]+([0-9a-f-]{36})/i,
       /application\s*\(client\)\s*id["'\s:]+([0-9a-f-]{36})/i,
       /client[_ -]?secret["'=: ]+([A-Za-z0-9~._\-#=]{16,128})/i,
+      /secret\s+value["'=: ]+([A-Za-z0-9~._\-#=]{16,128})/i,
       /"client_secret"\s*:\s*"([^"]{16,128})"/i
     ];
     for (const re of patterns) {
@@ -293,7 +299,102 @@
       if (!picks.clientId && (m[1].includes('apps.googleusercontent.com') || /^[0-9a-f-]{36}$/i.test(m[1]))) picks.clientId = m[1];
       if (!picks.clientSecret && m[1].length >= 16 && !/apps\.googleusercontent\.com/i.test(m[1]) && !/^[0-9a-f-]{36}$/i.test(m[1])) picks.clientSecret = m[1];
     }
+    const inferredProvider = inferProviderFromClientId(picks.clientId);
+    if (inferredProvider) picks.provider = inferredProvider;
     return picks;
+  }
+
+  function collectCredentialFields(value, picks) {
+    if (!value || typeof value !== 'object') return;
+    if (Array.isArray(value)) {
+      value.forEach((item) => collectCredentialFields(item, picks));
+      return;
+    }
+
+    const clientId = value.client_id || value.clientId || value.applicationId || value.appId;
+    const clientSecret = value.client_secret || value.clientSecret || value.secretValue || value.secretText;
+    if (!picks.clientId && typeof clientId === 'string') picks.clientId = clientId.trim();
+    if (!picks.clientSecret && typeof clientSecret === 'string') picks.clientSecret = clientSecret.trim();
+    if (!picks.redirectUri) {
+      let redirectUri = value.redirectUri;
+      if (Array.isArray(value.redirect_uris)) redirectUri = value.redirect_uris[0];
+      if (Array.isArray(value.redirectUris)) redirectUri = value.redirectUris[0];
+      if (typeof redirectUri === 'string') picks.redirectUri = redirectUri.trim();
+    }
+
+    if (value.web) {
+      picks.provider = picks.provider || 'gd';
+      collectCredentialFields(value.web, picks);
+    }
+    if (value.installed) {
+      picks.provider = picks.provider || 'gd';
+      collectCredentialFields(value.installed, picks);
+    }
+
+    Object.values(value).forEach((item) => collectCredentialFields(item, picks));
+  }
+
+  function inferProviderFromClientId(clientId) {
+    const value = String(clientId || '');
+    if (/apps\.googleusercontent\.com$/i.test(value)) return 'gd';
+    if (/^[0-9a-f-]{36}$/i.test(value)) return 'od';
+    return '';
+  }
+
+  function fileNameToCredentialLabel(fileName) {
+    return String(fileName || '')
+      .replace(/\.[^.]+$/, '')
+      .replace(/[_-]+/g, ' ')
+      .trim();
+  }
+
+  function fillCredentialFormFromParsed(picks, options = {}) {
+    if (!picks.clientId && !picks.clientSecret) {
+      window.App.utils.toast(options.failureMessage || 'Không parse được Client ID/Secret, vui lòng chọn hoặc dán dữ liệu rõ hơn.', true);
+      return false;
+    }
+    openModal();
+    const provider = picks.provider || inferProviderFromClientId(picks.clientId);
+    if (provider) $('credentialProvider').value = provider;
+    if (picks.clientId) $('credentialClientId').value = picks.clientId;
+    if (picks.clientSecret) $('credentialClientSecret').value = picks.clientSecret;
+    if (picks.redirectUri) $('credentialRedirectUri').value = picks.redirectUri;
+    if (options.label && !$('credentialLabel').value) $('credentialLabel').value = options.label;
+    window.App.utils.toast(options.successMessage || 'Đã parse dữ liệu vào form preset.');
+    return true;
+  }
+
+  async function readCredentialFileText(file) {
+    if (file.text) return file.text();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.addEventListener('load', () => resolve(String(reader.result || '')));
+      reader.addEventListener('error', () => reject(reader.error || new Error('Không đọc được file.')));
+      reader.readAsText(file);
+    });
+  }
+
+  async function handleCredentialFileSelect(event) {
+    const input = event.currentTarget;
+    const file = input.files?.[0];
+    if (!file) return;
+    const button = $('selectCredentialFileBtn');
+    if (button) button.disabled = true;
+    try {
+      const text = await readCredentialFileText(file);
+      const quickPaste = $('credentialQuickPaste');
+      if (quickPaste) quickPaste.value = text;
+      fillCredentialFormFromParsed(parseCredentialsText(text), {
+        label: fileNameToCredentialLabel(file.name),
+        successMessage: 'Đã đọc file và parse dữ liệu vào form preset.',
+        failureMessage: 'Không parse được Client ID/Secret từ file đã chọn.',
+      });
+    } catch (err) {
+      window.App.utils.toast(`Không đọc được file: ${err.message}`, true);
+    } finally {
+      input.value = '';
+      if (button) button.disabled = false;
+    }
   }
 
   function bindEvents() {
@@ -317,7 +418,13 @@
     $('credentialModal')?.addEventListener('click', (event) => {
       if (event.target.id === 'credentialModal') closeModal();
     });
-    $('parseCredentialQuickBtn')?.addEventListener('click', () => { const p = parseCredentialsText($('credentialQuickPaste')?.value); if (p.clientId || p.clientSecret) { openModal(); if (p.clientId) $('credentialClientId').value=p.clientId; if (p.clientSecret) $('credentialClientSecret').value=p.clientSecret; window.App.utils.toast('Đã parse dữ liệu vào form preset.'); } else window.App.utils.toast('Không parse được Client ID/Secret, vui lòng dán rõ hơn.', true); });
+    $('parseCredentialQuickBtn')?.addEventListener('click', () => {
+      fillCredentialFormFromParsed(parseCredentialsText($('credentialQuickPaste')?.value), {
+        failureMessage: 'Không parse được Client ID/Secret, vui lòng dán rõ hơn.',
+      });
+    });
+    $('selectCredentialFileBtn')?.addEventListener('click', () => $('credentialFileInput')?.click());
+    $('credentialFileInput')?.addEventListener('change', handleCredentialFileSelect);
     $('credentialsTableBody')?.addEventListener('click', (event) => {
       const button = event.target.closest('button[data-action]');
       if (!button) return;

@@ -350,7 +350,11 @@
             <div>Google: <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">Google Cloud Credentials</a></div>
             <div>OneDrive: <a href="https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade" target="_blank" rel="noopener">Azure App registrations</a></div>
             <div class="form-field"><label class="label" for="credentialQuickPaste">Paste text bất kỳ để tự parse Client ID/Secret</label><textarea class="textarea" id="credentialQuickPaste" rows="3" placeholder="Dán JSON, màn hình portal, hoặc text có client id + secret..."></textarea></div>
-            <button type="button" class="btn btn--secondary" id="parseCredentialQuickBtn">⚡ Parse nhanh vào form</button>
+            <div class="inline">
+              <button type="button" class="btn btn--secondary" id="parseCredentialQuickBtn">⚡ Parse nhanh vào form</button>
+              <button type="button" class="btn btn--secondary" id="selectCredentialFileBtn">📁 Chọn file</button>
+              <input type="file" class="hidden" id="credentialFileInput" accept=".json,.txt,.conf,.env,application/json,text/plain" />
+            </div>
           </div>
         </div>
         <div class="panel">
