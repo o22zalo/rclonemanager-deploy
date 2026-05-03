@@ -432,7 +432,11 @@
       });
     });
     // $('selectCredentialFileBtn')?.addEventListener('click', () => $('credentialFileInput')?.click());
-    $("credentialFileInput")?.addEventListener("change", handleCredentialFileSelect);
+    // $("credentialFileInput")?.addEventListener("change", handleCredentialFileSelect);
+    // Bằng:
+    document.addEventListener("change", (e) => {
+      if (e.target.id === "credentialFileInput") handleCredentialFileSelect(e);
+    });
     $("credentialsTableBody")?.addEventListener("click", (event) => {
       const button = event.target.closest("button[data-action]");
       if (!button) return;
