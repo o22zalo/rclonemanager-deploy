@@ -848,7 +848,7 @@
                 </div>
                 <div class="inline">
                   <button type="button" class="btn btn--secondary" id="clearCacheBtn">Clear cache</button>
-                  <button type="button" class="btn btn--secondary" id="forceReloadAppBtn">Force app reload</button>
+                  <button type="button" class="btn btn--secondary" id="forceReloadAppBtn" data-force-reload-app>Force app reload</button>
                   <button type="button" class="btn btn--primary" id="exportAllConfigsBtn">Export all configs</button>
                 </div>
               </div>
@@ -928,7 +928,10 @@
       <div class="footer__inner">
         <span class="footer__copy">© 2026 rclone OAuth Manager</span>
         <nav class="footer__links" id="footerOpsLinks" aria-label="Operational tools"></nav>
-        <button type="button" class="footer__link footer__button" id="runnerEnvBtn" title="Xem các biến môi trường _DOTENVRTDB_RUNNER">runner env</button>
+        <div class="footer__actions" aria-label="Footer actions">
+          <button type="button" class="footer__link footer__button" id="footerForceReloadAppBtn" data-force-reload-app title="Reload app và xoá cache giống nút Force app reload trong Settings">reload</button>
+          <button type="button" class="footer__link footer__button" id="runnerEnvBtn" title="Xem các biến môi trường _DOTENVRTDB_RUNNER">runner env</button>
+        </div>
         <span class="footer__status" id="footerStatus">Backend pending</span>
       </div>
     </footer>
@@ -1086,6 +1089,6 @@
     <script src="/js/configs.js?v=20260502-2" defer></script>
     <script src="/js/manager.js?v=20260430-6" defer></script>
     <script src="/js/rcloneCommands.js?v=20260501-2" defer></script>
-    <script src="/js/main.js?v=20260504-2" defer></script>
+    <script src="/js/main.js?v=20260504-3" defer></script>
   </body>
 </html>

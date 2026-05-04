@@ -2,6 +2,19 @@
 
 ---
 
+## [2.0.2] — 2026-05-04
+
+### Added
+
+- Added a `reload` action in the footer that uses the same force-reload/cache-clear logic as the existing `Force app reload` button in Settings.
+
+### Changed
+
+- Shared force-reload binding through `data-force-reload-app` so both Settings and footer reload buttons execute the same implementation and are disabled together during reload.
+- Bumped `main.js`, `main.css`, `layout.css`, `responsive.css`, and service worker cache versions to avoid stale footer behavior.
+
+---
+
 ## [2.0.1] — 2026-05-04
 
 ### Added

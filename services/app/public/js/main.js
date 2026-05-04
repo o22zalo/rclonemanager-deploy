@@ -152,7 +152,7 @@
       window.App.Credentials?.clearCache();
       window.App.utils.toast('Đã clear presets cache.');
     });
-    $('forceReloadAppBtn')?.addEventListener('click', forceReloadApp);
+    bindForceReloadButtons();
     $('exportAllConfigsBtn')?.addEventListener('click', exportAllConfigs);
   }
 
@@ -192,15 +192,27 @@
     window.location.replace(url.toString());
   }
 
+  function forceReloadButtons() {
+    return document.querySelectorAll('[data-force-reload-app]');
+  }
+
+  function bindForceReloadButtons() {
+    forceReloadButtons().forEach((button) => {
+      if (button.dataset.forceReloadBound === '1') return;
+      button.dataset.forceReloadBound = '1';
+      button.addEventListener('click', forceReloadApp);
+    });
+  }
+
   async function forceReloadApp() {
-    const button = $('forceReloadAppBtn');
-    if (button) button.disabled = true;
+    const buttons = Array.from(forceReloadButtons());
+    buttons.forEach((button) => { button.disabled = true; });
     try {
       window.App.utils.toast('Đang làm mới app cache...');
       await clearServiceWorkerCaches();
       reloadWithCacheBuster();
     } catch (err) {
-      if (button) button.disabled = false;
+      buttons.forEach((button) => { button.disabled = false; });
       window.App.utils.toast(`Không force reload được: ${err.message}`, true);
     }
   }
@@ -445,7 +457,7 @@
       });
       window.addEventListener('load', async () => {
         try {
-          const registration = await navigator.serviceWorker.register('/sw.js?v=20260502-2');
+          const registration = await navigator.serviceWorker.register('/sw.js?v=20260504-3');
           registration.update().catch(() => {});
           activateWaitingWorker(registration);
           registration.addEventListener('updatefound', () => {

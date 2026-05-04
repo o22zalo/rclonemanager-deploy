@@ -2,6 +2,18 @@
 
 ---
 
+## [2.0.2] — 2026-05-04 — Footer reload shortcut
+
+### What's New
+
+**Reload app directly from footer**
+Footer now has a compact `reload` action, so you can force refresh the app/cache without opening Settings.
+
+**Same logic as Settings**
+The footer `reload` action and the Settings `Force app reload` button call the same force-reload function.
+
+---
+
 ## [2.0.1] — 2026-05-04 — Mobile footer backend status
 
 ### What's New

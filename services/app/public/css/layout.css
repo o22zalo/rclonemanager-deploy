@@ -353,13 +353,22 @@
   gap: var(--space-4);
 }
 
-.footer__links {
+.footer__links,
+.footer__actions {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: var(--space-2);
-  flex: 1 1 auto;
   min-width: 0;
+}
+
+.footer__links {
+  justify-content: center;
+  flex: 1 1 auto;
+}
+
+.footer__actions {
+  justify-content: flex-end;
+  flex: 0 0 auto;
 }
 
 .footer__link {
