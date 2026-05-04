@@ -9,6 +9,7 @@
   const AZURE_SECRET_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const revealedSecrets = new Set();
   let credentialViewMode = normalizeViewMode(localStorage.getItem(VIEW_KEY) || "list");
+  let lastCredentialFileSignature = "";
 
   function $(id) {
     return document.getElementById(id);
@@ -383,11 +384,15 @@
   }
 
   async function handleCredentialFileSelect(event) {
-    const input = event.currentTarget;
-    const file = input.files?.[0];
+    const input = event.currentTarget || event.target;
+    const file = input?.files?.[0];
     if (!file) return;
-    const button = $("selectCredentialFileBtn");
-    if (button) button.disabled = true;
+
+    const signature = `${file.name}:${file.size}:${file.lastModified}`;
+    if (signature === lastCredentialFileSignature) return;
+    lastCredentialFileSignature = signature;
+
+    input.disabled = true;
     try {
       const text = await readCredentialFileText(file);
       const quickPaste = $("credentialQuickPaste");
@@ -401,8 +406,23 @@
       window.App.utils.toast(`Không đọc được file: ${err.message}`, true);
     } finally {
       input.value = "";
-      if (button) button.disabled = false;
+      input.disabled = false;
+      setTimeout(() => {
+        lastCredentialFileSignature = "";
+      }, 300);
     }
+  }
+
+  function bindCredentialFileInput() {
+    const input = $("credentialFileInput");
+    if (!input) return;
+
+    input.addEventListener("click", () => {
+      input.value = "";
+      lastCredentialFileSignature = "";
+    });
+    input.addEventListener("input", handleCredentialFileSelect);
+    input.addEventListener("change", handleCredentialFileSelect);
   }
 
   function bindEvents() {
@@ -431,8 +451,7 @@
         failureMessage: "Không parse được Client ID/Secret, vui lòng dán rõ hơn.",
       });
     });
-    $("selectCredentialFileBtn")?.addEventListener("click", () => $("credentialFileInput")?.click());
-    $("credentialFileInput")?.addEventListener("change", handleCredentialFileSelect);
+    bindCredentialFileInput();
     $("credentialsTableBody")?.addEventListener("click", (event) => {
       const button = event.target.closest("button[data-action]");
       if (!button) return;

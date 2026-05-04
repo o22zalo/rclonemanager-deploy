@@ -955,3 +955,61 @@
   border-top-color: var(--color-primary-600);
   animation: spin 700ms linear infinite;
 }
+
+.credential-import-toolbar {
+  display: grid;
+  grid-template-columns: auto minmax(260px, 420px);
+  gap: var(--space-3);
+  align-items: end;
+}
+
+.credential-import-toolbar__button {
+  align-self: end;
+}
+
+.credential-file-field {
+  min-width: 0;
+}
+
+.credential-file-input {
+  min-height: 38px;
+  max-width: 100%;
+  padding: 0 var(--space-3) 0 0;
+  cursor: pointer;
+}
+
+.credential-file-input::file-selector-button,
+.credential-file-input::-webkit-file-upload-button {
+  min-height: 36px;
+  margin: 0 var(--space-3) 0 0;
+  padding: var(--space-2) var(--space-4);
+  border: 0;
+  border-right: 1px solid var(--color-border-secondary);
+  background-color: var(--color-background-secondary);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.credential-file-input:hover::file-selector-button,
+.credential-file-input:hover::-webkit-file-upload-button {
+  background-color: var(--color-background-tertiary);
+}
+
+.credential-file-input:disabled {
+  cursor: wait;
+}
+
+.credential-file-input:disabled::file-selector-button,
+.credential-file-input:disabled::-webkit-file-upload-button {
+  cursor: wait;
+  color: var(--color-text-disabled);
+}
+
+@media (max-width: 640px) {
+  .credential-import-toolbar {
+    grid-template-columns: 1fr;
+  }
+}

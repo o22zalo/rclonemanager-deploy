@@ -12,7 +12,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="rclone OAuth" />
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
-    <link rel="stylesheet" href="/css/main.css?v=20260502-4" />
+    <link rel="stylesheet" href="/css/main.css?v=20260504-1" />
     <script>
       (function () {
         const theme = localStorage.getItem("app-theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
@@ -488,10 +488,19 @@
                   placeholder="Dán JSON, màn hình portal, hoặc text có client id + secret..."
                 ></textarea>
               </div>
-              <div class="inline">
-                <button type="button" class="btn btn--secondary" id="parseCredentialQuickBtn">⚡ Parse nhanh vào form</button>
-                <button type="button" class="btn btn--secondary" id="selectCredentialFileBtn">📁 Chọn file</button>
-                <input type="file" class="hidden" id="credentialFileInput" accept=".json,.txt,.conf,.env,application/json,text/plain" />
+              <div class="credential-import-toolbar">
+                <button type="button" class="btn btn--secondary credential-import-toolbar__button" id="parseCredentialQuickBtn">
+                  ⚡ Parse nhanh vào form
+                </button>
+                <div class="form-field credential-file-field">
+                  <label class="label" for="credentialFileInput">Chọn file credentials</label>
+                  <input
+                    type="file"
+                    class="input credential-file-input"
+                    id="credentialFileInput"
+                    accept=".json,.txt,.conf,.env,application/json,text/plain"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -1058,7 +1067,7 @@
     <script src="/js/sidebar.js?v=20260501-8" defer></script>
     <script src="/js/firebase-client.js?v=20260501-1" defer></script>
     <script src="/js/oauth.js?v=20260502-4" defer></script>
-    <script src="/js/credentials.js?v=20260501-15" defer></script>
+    <script src="/js/credentials.js?v=20260504-1" defer></script>
     <script src="/js/tags.js?v=20260502-2" defer></script>
     <script src="/js/configs.js?v=20260502-2" defer></script>
     <script src="/js/manager.js?v=20260430-6" defer></script>
