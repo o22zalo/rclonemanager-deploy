@@ -198,6 +198,18 @@
       await loadConfigs();
       window.App.utils.toast('Đã cập nhật quota.');
     } catch (err) {
+      if (err.status === 401) {
+        try {
+          window.App.utils.toast('Token hết hạn, đang tự động refresh...');
+          await window.App.api.request(`/api/configs/${id}/refresh`, { method: 'POST' });
+          await window.App.api.request(`/api/configs/${id}/quota`);
+          await loadConfigs();
+          window.App.utils.toast('Đã tự động refresh token và cập nhật quota.');
+          return;
+        } catch (refreshErr) {
+          console.error('Auto-refresh failed:', refreshErr);
+        }
+      }
       window.App.utils.toast(`Check thất bại: ${err.message}`, true);
       await loadConfigs();
     }

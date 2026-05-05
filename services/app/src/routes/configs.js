@@ -395,17 +395,34 @@ router.post('/:id/refresh', async (req, res, next) => {
 });
 
 router.get('/:id/quota', async (req, res, next) => {
+  const path = `${COLLECTION}/${req.params.id}`;
   try {
-    const path = `${COLLECTION}/${req.params.id}`;
-    const record = await firebase.get(path);
+    let record = await firebase.get(path);
     if (!record) {
       res.status(404).json({ error: 'Config not found.' });
       return;
     }
 
-    const quota = isServiceAccountRecord(record)
-      ? await fetchServiceAccountQuota(record)
-      : await fetchQuota(record);
+    const fetchQuotaWithRetry = async (currentRecord) => {
+      return isServiceAccountRecord(currentRecord)
+        ? await fetchServiceAccountQuota(currentRecord)
+        : await fetchQuota(currentRecord);
+    };
+
+    let quota;
+    try {
+      quota = await fetchQuotaWithRetry(record);
+    } catch (err) {
+      if (err.status !== 'expired' || isServiceAccountRecord(record) || !record.refreshToken) {
+        throw err;
+      }
+      // Auto-refresh and retry once
+      const updates = await refreshAccessToken(record);
+      await firebase.update(path, updates);
+      record = { ...record, ...updates };
+      quota = await fetchQuotaWithRetry(record);
+    }
+
     await firebase.update(path, {
       storageUsed: quota.storageUsed,
       storageTotal: quota.storageTotal,
@@ -424,24 +441,40 @@ router.get('/:id/quota', async (req, res, next) => {
         updatedAt: Date.now(),
       });
     } catch (_updateErr) {
-      // Keep the original cloud API error.
+      // Keep original error
     }
     next(ensureHttpStatus(err));
   }
 });
 
 router.get('/:id/files', async (req, res, next) => {
+  const path = `${COLLECTION}/${req.params.id}`;
   try {
-    const path = `${COLLECTION}/${req.params.id}`;
-    const record = await firebase.get(path);
+    let record = await firebase.get(path);
     if (!record) {
       res.status(404).json({ error: 'Config not found.' });
       return;
     }
 
-    const data = isServiceAccountRecord(record)
-      ? await listServiceAccountFiles(record)
-      : await listFiles(record, req.query.pageToken);
+    const listFilesWithRetry = async (currentRecord) => {
+      return isServiceAccountRecord(currentRecord)
+        ? await listServiceAccountFiles(currentRecord)
+        : await listFiles(currentRecord, req.query.pageToken);
+    };
+
+    let data;
+    try {
+      data = await listFilesWithRetry(record);
+    } catch (err) {
+      if (err.status !== 'expired' || isServiceAccountRecord(record) || !record.refreshToken) {
+        throw err;
+      }
+      const updates = await refreshAccessToken(record);
+      await firebase.update(path, updates);
+      record = { ...record, ...updates };
+      data = await listFilesWithRetry(record);
+    }
+
     await firebase.update(path, {
       lastChecked: Date.now(),
       status: 'active',
@@ -456,7 +489,7 @@ router.get('/:id/files', async (req, res, next) => {
         updatedAt: Date.now(),
       });
     } catch (_updateErr) {
-      // Keep the original cloud API error.
+      // Keep original error
     }
     next(ensureHttpStatus(err));
   }

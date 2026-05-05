@@ -40,7 +40,9 @@
     const data = contentType.includes('application/json') ? await response.json() : await response.text();
     if (!response.ok && !allowStatuses.includes(response.status)) {
       const message = data && data.error ? data.error : `HTTP ${response.status}`;
-      throw new Error(message);
+      const err = new Error(message);
+      err.status = response.status;
+      throw err;
     }
     return data;
   }
